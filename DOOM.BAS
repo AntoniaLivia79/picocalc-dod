@@ -69,7 +69,9 @@ Dim Integer R(15,15), SEEN(15,15)
 Dim F(8)                     ' 1 STR 2 VIT 3 AGI 4 INT 5 EXP 6 LCK 7 AUR 8 MOR
 Dim Integer OBJ(24)
 Dim SPL(6)                   ' spell charges
-Dim Integer D(4,2), T(18), GLY(17,7), BMASK(7), CHAOS(6)
+' TUNE() was T() in the original, but MMBasic will not allow T and T$
+' to coexist as different types
+Dim Integer D(4,2), TUNE(18), GLY(17,7), BMASK(7), CHAOS(6)
 Dim W$(11), T$(12), FLDC$(12)
 
 
@@ -78,7 +80,7 @@ Dim Integer MX, MY, LX, LY, MT, MS, SX, SY, DX, DY, MSTR, MB
 Dim Integer TR, GC, LT, LE, FI, QUIT, IX, IY, NLEV, SNDOK
 Dim S1, S2, S3, H, MV, MSTEP
 Dim Integer I, J, X, Y, SL
-Dim HERO$, CLASS$, MSG$, I$, K$
+Dim HERO$, CLASS$, MSG$, IK$, K$
 Dim TICK
 
 
@@ -103,7 +105,7 @@ For I = 1 To 4 : Read D(I,1), D(I,2) : Next I
 
 
 Data 69,117,73,121,81,129,69,117,73,121,81,129,89,137,97,145,101,149
-For I = 1 To 18 : Read T(I) : Next I
+For I = 1 To 18 : Read TUNE(I) : Next I
 
 
 ' the eighteen user defined characters of the original, 8 x 8 each
@@ -173,26 +175,26 @@ ShowStatus
 ' =====================================================================
 Do
   TICK = Timer
-  I$ = Arrow$(Inkey$)
+  IK$ = Arrow$(Inkey$)
 
 
-  If I$ = "A" And DX < 255 Then Attack
-  If I$ = "C" And F(7) > 0 And OBJ(17) + OBJ(18) > 0 Then CastSpell
-  If I$ = "G" Then Grab
-  If I$ = "P" Then Quaff
-  If I$ = "R" Then Reveal
-  If I$ = "?" Then Lore
-  If I$ = "S" Then
+  If IK$ = "A" And DX < 255 Then Attack
+  If IK$ = "C" And F(7) > 0 And OBJ(17) + OBJ(18) > 0 Then CastSpell
+  If IK$ = "G" Then Grab
+  If IK$ = "P" Then Quaff
+  If IK$ = "R" Then Reveal
+  If IK$ = "?" Then Lore
+  If IK$ = "S" Then
     SaveGame
     Exit Do
   EndIf
 
 
-  If I$ = "B" Then NF = NF - 1
-  If I$ = "N" Then NF = NF + 1
+  If IK$ = "B" Then NF = NF - 1
+  If IK$ = "N" Then NF = NF + 1
   If NF > 4 Then NF = 1
   If NF < 1 Then NF = 4
-  If I$ = "M" Then NX = NX + D(NF,1) : NY = NY + D(NF,2)
+  If IK$ = "M" Then NX = NX + D(NF,1) : NY = NY + D(NF,2)
   If NY > 15 Then NY = 15
   If NY < 1  Then NY = 1
   If NX < 1  Then NX = 1
@@ -225,7 +227,7 @@ Do
   If F(1) < S1 * .8 And Dice(8) < F(6) Then TF = 0
 
 
-  If I$ <> "" Then F(1) = F(1) * 0.99
+  If IK$ <> "" Then F(1) = F(1) * 0.99
   If F(1) < S1 Then F(1) = F(1) + (F(2) / 1100)
 
 
@@ -693,7 +695,7 @@ Sub QuestOver
   MS = 0
   sc = Int((TR * 10) + (GC * F(5)) + F(1) + F(2) + F(3))
   For i = 1 To 18
-    Snd T(i)
+    Snd TUNE(i)
   Next i
   CLS CBG
   Text 160, 40,  "THY QUEST IS OVER!", "CT", 1, 2, CHERO, CBG
@@ -731,8 +733,10 @@ End Sub
 ' =====================================================================
 '  LEVELS
 ' =====================================================================
+' the filename local must not be called f$: a local F of any type
+' hides the global F() stats array from the whole sub
 Sub NextLevel
-  Local f$
+  Local fn$
   SayFor T$(12)
   ' lines 1760 and 1920 of the listing were commented out: they refused
   ' the stairs until the hero had earned a point of experience per level
@@ -741,8 +745,8 @@ Sub NextLevel
     Exit Sub
   EndIf
   LE = LE + 1
-  f$ = LevelFile$(LE)
-  If f$ = "" Then
+  fn$ = LevelFile$(LE)
+  If fn$ = "" Then
     LE = LE - 1
     SayFor "THIS IS THE DEEPEST LEVEL"
     Exit Sub
@@ -876,10 +880,10 @@ End Function
 ' =====================================================================
 '  HERO FILE
 ' =====================================================================
-Sub LoadHero(f$)
+Sub LoadHero(fn$)
   Local Integer i
   Local ln$
-  Open f$ For Input As #1
+  Open fn$ For Input As #1
   Line Input #1, ln$                        ' DOOMHERO1
   Line Input #1, HERO$
   Line Input #1, CLASS$
@@ -899,9 +903,9 @@ Sub LoadHero(f$)
 End Sub
 
 
-Sub SaveHero(f$)
+Sub SaveHero(fn$)
   Local Integer i
-  Open f$ For Output As #1
+  Open fn$ For Output As #1
   Print #1, "DOOMHERO1"
   Print #1, HERO$
   Print #1, CLASS$
@@ -930,7 +934,7 @@ Sub SaveGame
   Text 160, 120, "THY PROGRESS IS RECORDED", "CT", 1, 1, CTTXT, CBG
   Text 160, 150, "RUN DOOM.BAS TO RESUME", "CT", 1, 1, CBTXT, CBG
   Text 160, 210, "PRESS ANY KEY", "CT", 1, 1, CBTXT, CBG
-  I$ = WaitKey$()
+  IK$ = WaitKey$()
   QUIT = 1
 End Sub
 
@@ -951,7 +955,7 @@ Sub Splash
   Text 160, 240, "MONSTERS MOVE WHETHER OR NOT", "CT", 1, 1, RGB(255,140,140), CBG
   Text 160, 256, "THOU DOST.  TARRY NOT.", "CT", 1, 1, RGB(255,140,140), CBG
   Text 160, 292, "PRESS ANY KEY", "CT", 1, 1, CTTXT, CBG
-  I$ = WaitKey$()
+  IK$ = WaitKey$()
 End Sub
 
 
@@ -982,7 +986,7 @@ End Sub
 
 Sub LoadGame
   Local Integer rsm, i, j
-  Local k$, f$
+  Local k$
   rsm = 0
   If FileExists(SPATH$ + "/HERO.DAT") Then
     CLS CBG

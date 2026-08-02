@@ -147,7 +147,7 @@ Do
       Place Val(KEY$)
 
 
-    Case "?" : Help
+    Case "?" : Lore
 
 
     Case "E"
@@ -430,7 +430,10 @@ Sub Splash
 End Sub
 
 
-Sub Help
+' named Lore, as in DOOM.BAS -- newer PicoMite firmware has a built in
+' HELP command, so a Sub called Help is shadowed and the call becomes
+' a firmware help lookup that dies wanting A:/help.txt
+Sub Lore
   Local k$
   CLS CBG
   Text 160, 16, "THE LORE OF DIGGING", "CT", 1, 2, CTTXT, CBG
