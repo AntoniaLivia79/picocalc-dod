@@ -3,14 +3,16 @@ Dungeon of Doom
 Ported from BBC BASIC to PicoMite BASIC
 
 DoD consists of 3 BASIC programs. By default
-all 3 should be copied to a new folder on
-the root of the SD Card called DOOM (the
-path can be changed as shown below). The
+all 3 should be copied to the SD card
+folder  B:/picomite/games/rpg/DOOM  (the
+path can be changed as shown below; the
+programs create the data folders
+themselves if they are missing). The
 first time you run the game, you will
 need to run the programs in the order
 shown below to generate the level and
 character data files. After that,
-you can just run DOOM.BAS to play the game. 
+you can just run DOOM.BAS to play the game.
 
 DUNGEN.BAS
 ----------
@@ -33,8 +35,8 @@ HERO file, and saves progress.
 Every path lives in two variables at the
 top of each program:
 
-Dim DPATH$ = "B:/DOOM"
-Dim SPATH$ = "B:/DOOM/SAVE"
+Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
+Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
 
 On PicoMite A: is internal flash and B:
 is the SD card. 
@@ -57,8 +59,18 @@ H J K L and the digit keys lay tiles:
 0 ERASE a tile
 
 E wipes the level, N saves and goes one
-level deeper, S saves and stops, ? 
+level deeper, S saves and stops, ?
 shows the lore.
+
+R conjures a whole level by chance:
+walls, entrance, exit, treasure, traps
+and monsters, with every square
+guaranteed reachable. Edit the result
+as you please before saving. The idol
+must still be laid by hand on the
+deepest level. The counts and wall
+density are tuning constants at the
+top of DUNGEN.BAS.
 
 Levels already saved are loaded for
 editing instead of always starting 
@@ -131,19 +143,68 @@ The bottom bar shows:
 Your hero (@) changes sprite to show
 which way you face.
 
-Movement
-~~~~~~~~
+Movement and facing
+~~~~~~~~~~~~~~~~~~~
 
-You move one square at a time in the
-direction you are currently facing.
+Your hero always faces one of the four
+compass directions, N E S or W. The
+FACE field in the panel shows which,
+and the hero's sprite points the same
+way.
 
-  UP ARROW or M   move forward
-  LEFT ARROW or B turn left (widdershins)
-  RIGHT ARROW or N turn right (sunwise)
+  UP ARROW or M   move forward one
+                  square, in the
+                  direction faced
+  LEFT ARROW or B turn left on the
+                  spot (widdershins)
+  RIGHT ARROW or N turn right on the
+                  spot (sunwise)
 
-You cannot walk into walls, monsters, or
-loose objects — bumping them costs a
-sliver of STR.
+All movement is forwards. There is no
+key to step backwards or sideways:
+this is by design, kept from the
+original BBC game. To retreat you must
+turn about — two turns — and then walk,
+and since the game runs in real time
+the monster keeps coming while you
+turn. Choose your facing before
+trouble arrives.
+
+Facing also governs your hands: G
+grabs whatever lies in the square
+directly ahead of you, and the CHAOS
+spell remakes the square directly
+ahead. Face a thing to use it.
+
+You cannot walk into walls, monsters,
+or loose objects — bumping them costs
+a sliver of STR.
+
+Exertion and rest
+~~~~~~~~~~~~~~~~~
+
+Every tick in which you press any key
+saps one percent of your STR: action
+is effort. Bumping an obstacle costs a
+little more, and traps grind you down
+while they hold you.
+
+Whenever STR is below its peak it
+recovers slowly, at a rate set by your
+VIT — the hardier the hero, the faster
+the wind returns. Stand still a moment
+and watch it climb. A potion (P)
+restores STR to its peak at once.
+
+The STR figure in the panel is rounded
+to the nearest whole point, so small
+wear and recovery will not show until
+it amounts to something.
+
+If STR ever falls below one, the hero
+dies, whether by blows or by sheer
+exhaustion. Keep a potion for the
+long fights.
 
 What you see
 ~~~~~~~~~~~~
@@ -167,13 +228,24 @@ Tiles you may encounter:
 Walking onto the stair tile (>) descends
 to the next level automatically.
 
-A trap (^) snares you in place, draining
-STR, until a lucky Agility check frees you.
+A trap (^) snares you in place while
+your exertion drains STR. Only once
+STR has worn below eight tenths of its
+peak may a roll of your LUCK spring
+you free — a trap is always a costly
+detour.
 
 Combat
 ~~~~~~
 
-  A   attack the monster one square ahead
+  A   attack the monster that has
+      closed with you
+
+Once a monster has been spotted it
+hunts you, and A strikes at it when it
+is near, whichever way you face. (Only
+grabbing and the CHAOS spell insist on
+facing.)
 
 Attack connects if your Agility plus Luck
 beats the monster's roll; a miss does no

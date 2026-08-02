@@ -6,19 +6,19 @@ Originally from Usborne's *Write Your Own Fantasy Games For Your Microcomputer*.
 
 ## Setup
 
-The game consists of three BASIC programs. Copy all three to a folder called `DOOM` on the root of the SD card:
+The game consists of three BASIC programs. Copy all three to the SD card folder `B:/picomite/games/rpg/DOOM`:
 
 ```
-B:/DOOM/DUNGEN.BAS
-B:/DOOM/CHARGEN.BAS
-B:/DOOM/DOOM.BAS
+B:/picomite/games/rpg/DOOM/DUNGEN.BAS
+B:/picomite/games/rpg/DOOM/CHARGEN.BAS
+B:/picomite/games/rpg/DOOM/DOOM.BAS
 ```
 
-On PicoMite, `A:` is internal flash and `B:` is the SD card. The paths are set in two variables at the top of each program and can be changed there:
+On PicoMite, `A:` is internal flash and `B:` is the SD card. The data paths are set in two variables at the top of each program and can be changed there (the programs create missing folders themselves):
 
 ```basic
-Dim DPATH$ = "B:/DOOM"
-Dim SPATH$ = "B:/DOOM/SAVE"
+Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
+Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
 ```
 
 ### First-time setup
@@ -54,6 +54,7 @@ Writes `LEVEL1.DAT` through `LEVELn.DAT` and a `DUNGEON.DAT` index to `B:/DOOM/`
 | `8` | Place SAFE PLACE |
 | `9` | Place MONSTER |
 | `0` | Erase tile |
+| `R` | Conjure a random level |
 | `E` | Wipe the level |
 | `N` | Save and go one level deeper |
 | `S` | Save and stop |
@@ -64,6 +65,7 @@ Writes `LEVEL1.DAT` through `LEVELn.DAT` and a `DUNGEON.DAT` index to `B:/DOOM/`
 
 - A level cannot be saved until an entrance (`5`) has been placed.
 - The Lost Idol (`4`) ends the quest — place it on your deepest level.
+- `R` generates a complete level — walls, entrance, exit, treasure, traps and monsters — with every square guaranteed reachable from the entrance. Edit the result before saving; the Idol must still be placed by hand. Wall density and item counts are tuning constants at the top of DUNGEN.BAS.
 - Levels already saved are loaded for editing, so you can revise a level without redrawing it from scratch.
 - Rolling a new character or redrawing a level clears the matching save file.
 
@@ -118,17 +120,31 @@ The bottom bar shows:
 
 Your hero (`@`) changes sprite to show which way you face.
 
-### Movement
+### Movement and facing
 
-You move one square at a time in the direction you are currently facing.
+Your hero always faces one of the four compass directions — N, E, S or W. The FACE field in the status panel shows which, and the hero's sprite points the same way.
 
 | Key | Action |
 |-----|--------|
-| `↑` or `M` | Move forward |
-| `←` or `B` | Turn left (widdershins) |
-| `→` or `N` | Turn right (sunwise) |
+| `↑` or `M` | Move forward one square, in the direction faced |
+| `←` or `B` | Turn left on the spot (widdershins) |
+| `→` or `N` | Turn right on the spot (sunwise) |
+
+All movement is forwards. There is **no key to step backwards or sideways** — this is by design, kept from the original BBC game's controls. To retreat you must turn about (two turns) and then walk, and since the game runs in real time the monster keeps coming while you turn. Choose your facing before trouble arrives.
+
+Facing also governs your hands: `G` grabs whatever lies in the square directly ahead of you, and the CHAOS spell remakes the square directly ahead. Face a thing to use it.
 
 Bumping into a wall, monster, or loose object costs a sliver of STR.
+
+### Exertion and rest
+
+Every tick in which you press any key saps 1% of your STR — action is effort. Bumping obstacles costs a little more, and traps grind you down while they hold you.
+
+Whenever STR is below its peak it recovers slowly, at a rate set by your VIT — the hardier the hero, the faster the wind returns. Stand still a moment and watch it climb. A potion (`P`) restores STR to its peak at once.
+
+The STR figure in the panel is rounded to the nearest whole point, so small wear and recovery won't show until it amounts to something.
+
+If STR ever falls below one the hero dies, whether by blows or by sheer exhaustion. Keep a potion for the long fights.
 
 ### Tiles
 
@@ -149,11 +165,11 @@ Only squares you have already lit are visible. Unexplored passages stay dark.
 
 Walking onto the stair tile (`>`) descends automatically.
 
-A trap (`^`) snares you in place, draining STR each tick, until a lucky Agility check frees you.
+A trap (`^`) snares you in place while your exertion drains STR. Only once STR has worn below 80% of its peak can a roll of your LUCK spring you free — a trap is always a costly detour.
 
 ### Combat
 
-Press `A` to attack the monster one square ahead of you.
+Press `A` to attack the monster that has closed with you. Once a monster is spotted it hunts you, and `A` strikes at it when it is near, whichever way you face — only grabbing and the CHAOS spell insist on facing.
 
 Your attack connects if Agility plus Luck beats the monster's roll. A miss does no damage. A hit deals damage based on your STR plus any weapons carried, reduced by the monster's toughness. Monsters strike back automatically when adjacent — armour and a helmet reduce what gets through.
 
