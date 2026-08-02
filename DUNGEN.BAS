@@ -36,6 +36,18 @@ Dim Integer C7 = 238      ' safe place          key 8
 Dim Integer MON1 = 239, MON2 = 240, MON3 = 241   '                key 9
 
 
+' ------------------------------------------- random level tuning ---
+' Used by the R key.  The lo/hi pairs are ranges; how many of each
+' thing a conjured level gets is picked from between them.
+Dim Integer RWALL  = 5       ' one interior square in RWALL is a wall
+Dim Integer RFLOOR = 60      ' fewest walkable squares worth keeping
+Dim Integer RCHLO = 3, RCHHI = 4     ' chests
+Dim Integer RVALO = 3, RVAHI = 4     ' vases
+Dim Integer RTRLO = 2, RTRHI = 3     ' traps
+Dim Integer RSAFE = 1                ' safe places
+Dim Integer RMNLO = 4, RMNHI = 5     ' monsters
+
+
 ' ------------------------------------------------- geometry ---------
 Dim Integer TW = 16
 Dim Integer MAPX = 0, MAPY = 20
@@ -159,6 +171,15 @@ Do
       EndIf
 
 
+    Case "R"
+      If Confirm$("CONJURE A RANDOM LEVEL? Y/N") = "Y" Then
+        Generate : Redraw
+        Say "BEHOLD! NOW EDIT AWAY, OR SAVE"
+      Else
+        Say ""
+      EndIf
+
+
     Case "N"
       If Ready() Then
         SaveLevel LEV
@@ -248,6 +269,90 @@ Sub Blank
 End Sub
 
 
+' Conjure a whole level: walls round the rim, a scattering of walls
+' within, then the way in.  A flood fill from the way in finds every
+' square a hero could walk to, and the exit and all the furniture are
+' laid only on those squares, so nothing is ever sealed off.  The
+' deepest level still wants its idol laid by hand, key 4.
+Sub Generate
+  Local Integer x1, y1, i, n, nf, qh, cx, cy, d, best
+  Local Integer V(15,15), FX(225), FY(225)
+
+  Do
+    For y1 = 1 To 15
+      For x1 = 1 To 15
+        If x1 = 1 Or x1 = 15 Or y1 = 1 Or y1 = 15 Then
+          R(x1,y1) = C1
+        ElseIf Dice(RWALL) = 1 Then
+          R(x1,y1) = C1
+        Else
+          R(x1,y1) = C0
+        EndIf
+      Next x1
+    Next y1
+
+    Do
+      IX = 1 + Dice(13) : IY = 1 + Dice(13)
+    Loop Until R(IX,IY) = C0
+    R(IX,IY) = CW
+
+    ' breadth first from the way in; the queue doubles as the list of
+    ' reached squares once the fill is done
+    For y1 = 1 To 15 : For x1 = 1 To 15 : V(x1,y1) = 0 : Next x1 : Next y1
+    FX(1) = IX : FY(1) = IY : V(IX,IY) = 1 : nf = 1 : qh = 1
+    Do While qh <= nf
+      cx = FX(qh) : cy = FY(qh) : qh = qh + 1
+      If R(cx+1,cy) <> C1 And V(cx+1,cy) = 0 Then
+        V(cx+1,cy) = 1 : nf = nf + 1 : FX(nf) = cx+1 : FY(nf) = cy
+      EndIf
+      If R(cx-1,cy) <> C1 And V(cx-1,cy) = 0 Then
+        V(cx-1,cy) = 1 : nf = nf + 1 : FX(nf) = cx-1 : FY(nf) = cy
+      EndIf
+      If R(cx,cy+1) <> C1 And V(cx,cy+1) = 0 Then
+        V(cx,cy+1) = 1 : nf = nf + 1 : FX(nf) = cx : FY(nf) = cy+1
+      EndIf
+      If R(cx,cy-1) <> C1 And V(cx,cy-1) = 0 Then
+        V(cx,cy-1) = 1 : nf = nf + 1 : FX(nf) = cx : FY(nf) = cy-1
+      EndIf
+    Loop
+
+    ' a cramped cave is no dungeon; try again
+  Loop Until nf >= RFLOOR
+
+  ' the way down goes as far from the way in as a hero can walk
+  best = -1
+  For i = 2 To nf
+    d = Abs(FX(i) - IX) + Abs(FY(i) - IY)
+    If d > best Then best = d : n = i
+  Next i
+  R(FX(n),FY(n)) = C5
+  FX(n) = FX(nf) : FY(n) = FY(nf) : nf = nf - 1
+
+  Sprinkle C3, Between(RCHLO, RCHHI), FX(), FY(), nf
+  Sprinkle C2, Between(RVALO, RVAHI), FX(), FY(), nf
+  Sprinkle C6, Between(RTRLO, RTRHI), FX(), FY(), nf
+  Sprinkle C7, RSAFE, FX(), FY(), nf
+  For i = 1 To Between(RMNLO, RMNHI)
+    Sprinkle 238 + Dice(3), 1, FX(), FY(), nf
+  Next i
+
+  DIRTY = 1
+End Sub
+
+
+' lay cnt tiles of one kind on squares drawn from the reached list,
+' never on the way in at slot one, each square used once
+Sub Sprinkle(code As Integer, cnt As Integer, PX() As Integer, PY() As Integer, np As Integer)
+  Local Integer i, k
+  For k = 1 To cnt
+    If np < 2 Then Exit For
+    i = 1 + Dice(np - 1)
+    R(PX(i),PY(i)) = code
+    PX(i) = PX(np) : PY(i) = PY(np) : np = np - 1
+  Next k
+End Sub
+
+
 ' a level with no way in cannot be entered, which the original also
 ' enforced with IF IX>0
 Function Ready() As Integer
@@ -284,11 +389,12 @@ Sub Layout
   Next i
 
 
-  Text PANX, 192, "? HELP",  "LT", 1, 1, CBTXT, CPBG
-  Text PANX, 204, "E WIPE",  "LT", 1, 1, CBTXT, CPBG
-  Text PANX, 216, "N NEXT",  "LT", 1, 1, CBTXT, CPBG
-  Text PANX, 228, "S SAVE",  "LT", 1, 1, CBTXT, CPBG
-  Text PANX, 240, "Q QUIT",  "LT", 1, 1, CBTXT, CPBG
+  Text PANX, 188, "? HELP",   "LT", 1, 1, CBTXT, CPBG
+  Text PANX, 200, "R RANDOM", "LT", 1, 1, CBTXT, CPBG
+  Text PANX, 212, "E WIPE",   "LT", 1, 1, CBTXT, CPBG
+  Text PANX, 224, "N NEXT",   "LT", 1, 1, CBTXT, CPBG
+  Text PANX, 236, "S SAVE",   "LT", 1, 1, CBTXT, CPBG
+  Text PANX, 248, "Q QUIT",   "LT", 1, 1, CBTXT, CPBG
 
 
   Text 4, YKEY, "ARROWS OR H J K L MOVE THE CURSOR", "LT", 1, 1, CBTXT, CBBG
@@ -448,6 +554,7 @@ Sub Lore
   Text 160, 168, "8 SAFE      NO BEAST MAY STRIKE THEE", "CT", 1, 1, CBTXT, CBG
   Text 160, 184, "9 GUARD     A BEAST OF RANDOM MIGHT", "CT", 1, 1, CBTXT, CBG
   Text 160, 200, "0 ERASE     BACK TO BARE FLOOR", "CT", 1, 1, CBTXT, CBG
+  Text 160, 216, "R CONJURE A RANDOM LEVEL", "CT", 1, 1, CPTXT, CBG
   Text 160, 232, "E WIPE THE WHOLE LEVEL", "CT", 1, 1, CPTXT, CBG
   Text 160, 248, "N SAVE AND GO ONE LEVEL DEEPER", "CT", 1, 1, CPTXT, CBG
   Text 160, 264, "S SAVE AND STOP    Q STOP", "CT", 1, 1, CPTXT, CBG
@@ -615,6 +722,11 @@ End Function
 
 Function Dice(n) As Integer
   If n < 1 Then Dice = 0 Else Dice = Int(Rnd * Int(n)) + 1
+End Function
+
+
+Function Between(lo As Integer, hi As Integer) As Integer
+  If hi <= lo Then Between = lo Else Between = lo - 1 + Dice(hi - lo + 1)
 End Function
 
 
