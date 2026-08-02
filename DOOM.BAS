@@ -376,7 +376,9 @@ End Sub
 Sub ShowStatus
   Local Integer att
   Local s$
-  Fld 1, PANX, 33,  RPad$(NS$(Int(F(1))), 5)
+  ' rounded, not truncated: exertion leaves STR fractionally below its
+  ' peak and Int() would flicker the display a whole point low
+  Fld 1, PANX, 33,  RPad$(NS$(Int(F(1) + 0.5)), 5)
   Fld 2, PANX, 67,  RPad$(NS$(Int(F(2))), 5)
   Fld 3, PANX, 101, RPad$(NS$(Int(F(7))), 5)
   Fld 4, PANX, 135, RPad$(Mid$("NESW.", NF, 1), 5)
