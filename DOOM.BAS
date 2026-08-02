@@ -1,4 +1,4 @@
-﻿' =====================================================================
+' =====================================================================
 '  DUNGEON OF DOOM  --  GAME MODULE                       DOOM.BAS
 '  PicoMite BASIC port for the PicoCalc (320 x 320)
 '
@@ -27,8 +27,8 @@ Dim Integer TONEMS   = 40
 Dim Integer NOISEMS  = 30
 
 
-Dim DPATH$ = "B:/DOOM"
-Dim SPATH$ = "B:/DOOM/SAVE"
+Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
+Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
 
 
 ' ------------------------------------------------- tile codes ------
@@ -69,7 +69,7 @@ Dim Integer R(15,15), SEEN(15,15)
 Dim F(8)                     ' 1 STR 2 VIT 3 AGI 4 INT 5 EXP 6 LCK 7 AUR 8 MOR
 Dim Integer OBJ(24)
 Dim SPL(6)                   ' spell charges
-Dim Integer D(4,2), T(18), GLY(17,7), BIT(7), CHAOS(6)
+Dim Integer D(4,2), T(18), GLY(17,7), BMASK(7), CHAOS(6)
 Dim W$(11), T$(12), FLDC$(12)
 
 
@@ -130,7 +130,7 @@ For I = 0 To 17
 Next I
 
 
-For I = 0 To 7 : BIT(I) = 2 ^ (7 - I) : Next I
+For I = 0 To 7 : BMASK(I) = 2 ^ (7 - I) : Next I
 
 
 ' harmless tiles the chaos spell may churn through
@@ -155,7 +155,7 @@ TCOL(17) = RGB(200,100,240)
 SNDOK = 1
 On Error Skip 1
 Play Tone 440, 440, 20
-If MM.ErrNo <> 0 Then SNDOK = 0
+If MM.Errno <> 0 Then SNDOK = 0
 On Error Clear
 Pause 30
 
@@ -286,21 +286,21 @@ End Sub
 
 ' one 8 x 8 glyph, doubled to 16 x 16, drawn as horizontal runs
 Sub DrawGlyph(px As Integer, py As Integer, g As Integer, fc As Integer)
-  Local Integer r, b, bits, run
+  Local Integer r, b, bits, RUNLEN
   If g < 0 Or g > 17 Then Exit Sub
   For r = 0 To 7
     bits = GLY(g,r)
     If bits <> 0 Then
       b = 0
       Do While b <= 7
-        If (bits And BIT(b)) <> 0 Then
-          run = 0
-          Do While b + run <= 7
-            If (bits And BIT(b + run)) = 0 Then Exit Do
-            run = run + 1
+        If (bits And BMASK(b)) <> 0 Then
+          RUNLEN = 0
+          Do While b + RUNLEN <= 7
+            If (bits And BMASK(b + RUNLEN)) = 0 Then Exit Do
+            RUNLEN = RUNLEN + 1
           Loop
-          Box px + b*2, py + r*2, run*2, 2, 0, fc, fc
-          b = b + run
+          Box px + b*2, py + r*2, RUNLEN*2, 2, 0, fc, fc
+          b = b + RUNLEN
         Else
           b = b + 1
         EndIf
@@ -1096,7 +1096,7 @@ Function FileExists(f$) As Integer
   FileExists = 0
   On Error Skip 1
   Open f$ For Input As #9
-  e = MM.ErrNo
+  e = MM.Errno
   On Error Clear
   If e = 0 Then
     Close #9
@@ -1107,7 +1107,7 @@ End Function
 
 Sub MakeDir(d$)
   On Error Skip 1
-  MkDir d$
+  Mkdir d$
   On Error Clear
 End Sub
 

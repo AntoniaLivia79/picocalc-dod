@@ -1,4 +1,4 @@
-﻿' =====================================================================
+' =====================================================================
 '  DUNGEON OF DOOM  --  CHARACTER GENERATOR            CHARGEN.BAS
 '  PicoMite BASIC port for the PicoCalc (320 x 320)
 '
@@ -15,8 +15,8 @@ Option Default Float
 
 
 ' ------------------------------------------------- paths ------------
-Dim DPATH$ = "B:/DOOM"
-Dim SPATH$ = "B:/DOOM/SAVE"
+Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
+Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
 
 
 ' ------------------------------------------------- geometry ---------
@@ -331,7 +331,7 @@ End Sub
 
 Sub MakeDir(d$)
   On Error Skip 1
-  MkDir d$
+  Mkdir d$
   On Error Clear
 End Sub
 

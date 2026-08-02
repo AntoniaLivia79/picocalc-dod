@@ -1,4 +1,4 @@
-﻿' =====================================================================
+' =====================================================================
 '  DUNGEON OF DOOM  --  LEVEL GENERATOR                DUNGEN.BAS
 '  PicoMite BASIC port for the PicoCalc (320 x 320)
 '
@@ -16,8 +16,8 @@ Option Explicit
 Option Default Float
 
 
-Dim DPATH$ = "B:/DOOM"
-Dim SPATH$ = "B:/DOOM/SAVE"
+Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
+Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
 
 
 ' ------------------------------------------------- tile codes -------
@@ -60,7 +60,7 @@ CBBG   = RGB(16,16,20)
 CBTXT  = RGB(190,195,205)
 
 
-Dim Integer TCOL(17), GLY(17,7), BIT(7)
+Dim Integer TCOL(17), GLY(17,7), BMASK(7)
 
 
 ' ------------------------------------------------- state -----------
@@ -98,7 +98,7 @@ For I = 0 To 17
 Next I
 
 
-For I = 0 To 7 : BIT(I) = 2 ^ (7 - I) : Next I
+For I = 0 To 7 : BMASK(I) = 2 ^ (7 - I) : Next I
 
 
 For I = 0 To 17 : TCOL(I) = RGB(200,200,200) : Next I
@@ -332,21 +332,21 @@ End Function
 
 ' one 8 x 8 glyph doubled to 16 x 16, painted as horizontal runs
 Sub DrawGlyph(px As Integer, py As Integer, g As Integer, fc As Integer)
-  Local Integer r, bits, b, run
+  Local Integer r, bits, b, RUNLEN
   If g < 0 Or g > 17 Then Exit Sub
   For r = 0 To 7
     bits = GLY(g,r)
     If bits <> 0 Then
       b = 0
       Do While b <= 7
-        If (bits And BIT(b)) <> 0 Then
-          run = 0
-          Do While b + run <= 7
-            If (bits And BIT(b + run)) = 0 Then Exit Do
-            run = run + 1
+        If (bits And BMASK(b)) <> 0 Then
+          RUNLEN = 0
+          Do While b + RUNLEN <= 7
+            If (bits And BMASK(b + RUNLEN)) = 0 Then Exit Do
+            RUNLEN = RUNLEN + 1
           Loop
-          Box px + b*2, py + r*2, run*2, 2, 0, fc, fc
-          b = b + run
+          Box px + b*2, py + r*2, RUNLEN*2, 2, 0, fc, fc
+          b = b + RUNLEN
         Else
           b = b + 1
         EndIf
@@ -618,7 +618,7 @@ Function FileExists(f$) As Integer
   FileExists = 0
   On Error Skip 1
   Open f$ For Input As #9
-  e = MM.ErrNo
+  e = MM.Errno
   On Error Clear
   If e = 0 Then
     Close #9
@@ -629,7 +629,7 @@ End Function
 
 Sub MakeDir(d$)
   On Error Skip 1
-  MkDir d$
+  Mkdir d$
   On Error Clear
 End Sub
 
