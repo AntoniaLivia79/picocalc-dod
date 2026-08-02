@@ -175,6 +175,8 @@ Next J
 '  PHASE 3 -- name and save
 ' =====================================================================
 MSG$ = "NAME THY CHARACTER"
+J = 1                    ' back off the shop loop's exit value of 5,
+                         ' which would index FN$(5,9) out of bounds
 DrawPage : ShowMsg
 HERO$ = AskText$("NAME:", 10)
 If HERO$ = "" Then HERO$ = "NAMELESS"
