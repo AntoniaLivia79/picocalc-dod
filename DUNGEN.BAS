@@ -115,6 +115,7 @@ TCOL(17) = RGB(200,100,240)
 
 
 ' ------------------------------------------------- start up --------
+CheckSD
 MakeDir DPATH$
 MakeDir SPATH$
 Splash
@@ -486,9 +487,10 @@ End Sub
 ' level can also be drawn by hand in a text editor.
 Sub SaveLevel(n As Integer)
   Local Integer x1, y1
-  Local ln$
+  Local ln$, f$
   Say "ONE MOMENT PLEASE"
-  Open DPATH$ + "/LEVEL" + NS$(n) + ".DAT" For Output As #1
+  f$ = DPATH$ + "/LEVEL" + NS$(n) + ".DAT"
+  Open f$ For Output As #1
   Print #1, "DOOMLEV1"
   Print #1, NS$(n)
   Print #1, NS$(IX)
@@ -630,10 +632,38 @@ Function FileExists(f$) As Integer
 End Function
 
 
+' Mkdir only makes one level at a time, so walk the path and make each
+' parent in turn.  Existing directories just raise an error we skip.
 Sub MakeDir(d$)
+  Local Integer i
+  For i = 4 To Len(d$)
+    If Mid$(d$, i, 1) = "/" Then
+      On Error Skip 1
+      Mkdir Left$(d$, i - 1)
+      On Error Clear
+    EndIf
+  Next i
   On Error Skip 1
   Mkdir d$
   On Error Clear
+End Sub
+
+
+' refuse to start rather than wedge inside Open or Mkdir when the card
+' is missing or unreadable.  MM.Info(SDCARD) only reads a status flag,
+' so unlike the file commands it cannot hang.
+Sub CheckSD
+  Local s$
+  If UCase$(Left$(DPATH$, 2)) <> "B:" Then Exit Sub
+  s$ = MM.Info(SDCARD)
+  If UCase$(s$) <> "READY" Then
+    Print "SD CARD " + s$
+    Print "DUNGEN NEEDS THE CARD FOR " + DPATH$
+    Print "CHECK IT IS SEATED AND RUN AGAIN"
+    Text 0, 0,  "SD CARD " + s$, "LT", 1, 1, RGB(255,80,80), RGB(0,0,0)
+    Text 0, 16, "CHECK IT IS SEATED AND RUN AGAIN", "LT", 1, 1, RGB(255,80,80), RGB(0,0,0)
+    End
+  EndIf
 End Sub
 
 

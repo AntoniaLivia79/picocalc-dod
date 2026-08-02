@@ -331,7 +331,17 @@ Sub SaveHero(f$)
 End Sub
 
 
+' Mkdir only makes one level at a time, so walk the path and make each
+' parent in turn.  Existing directories just raise an error we skip.
 Sub MakeDir(d$)
+  Local Integer i
+  For i = 4 To Len(d$)
+    If Mid$(d$, i, 1) = "/" Then
+      On Error Skip 1
+      Mkdir Left$(d$, i - 1)
+      On Error Clear
+    EndIf
+  Next i
   On Error Skip 1
   Mkdir d$
   On Error Clear
