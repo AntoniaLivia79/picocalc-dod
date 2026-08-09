@@ -23,6 +23,7 @@ Dim Integer FIXMISS  = 1     ' 1 = "MISSED!" really does no damage
 Dim Integer FIXFLAIL = 1     ' 1 = the flail adds to your attack
 Dim Integer FIXMOVE  = 1     ' 1 = monsters can close in from any side
 Dim Integer NEEDEXP  = 0     ' 1 = restore the book's experience gate
+Dim Integer MSPEED   = 2     ' monster speed 1=slow 2=normal 3=fast
 Dim Integer TONEMS   = 40
 Dim Integer NOISEMS  = 30
 
@@ -65,10 +66,12 @@ Dim Integer TCOL(17)
 
 
 ' ------------------------------------------------- state -----------
-Dim Integer R(15,15), SEEN(15,15)
+Dim Integer R(15,15), SEEN(15,15), TVIS(15,15)
 Dim F(8)                     ' 1 STR 2 VIT 3 AGI 4 INT 5 EXP 6 LCK 7 AUR 8 MOR
 Dim Integer OBJ(24)
 Dim SPL(6)                   ' spell charges
+Dim PRY(3)                   ' prayer charges (cleric only)
+Dim LCKBOOST, LCKTTL         ' Fortune prayer: bonus and remaining ticks
 ' TUNE() was T() in the original, but MMBasic will not allow T and T$
 ' to coexist as different types
 Dim Integer D(4,2), TUNE(18), GLY(17,7), BMASK(7), CHAOS(6)
@@ -181,7 +184,8 @@ Do
   If IK$ = "A" And DX < 255 Then Attack
   If IK$ = "C" And F(7) > 0 And OBJ(17) + OBJ(18) > 0 Then CastSpell
   If IK$ = "G" Then Grab
-  If IK$ = "P" Then Quaff
+  If IK$ = "Q" Then Quaff
+  If IK$ = "P" And CLASS$ = "CLERIC" Then Pray
   If IK$ = "R" Then Reveal
   If IK$ = "?" Then Lore
   If IK$ = "S" Then
@@ -222,13 +226,20 @@ Do
   EndIf
 
 
-  If RH = C6 Then TX = NX : TY = NY : TF = 1
+  If RH = C6 Then TX = NX : TY = NY : TF = 1 : TVIS(NX,NY) = 1
   If TF = 1 Then NX = TX : NY = TY
   If F(1) < S1 * .8 And Dice(8) < F(6) Then TF = 0
 
 
   If IK$ <> "" Then F(1) = F(1) * 0.99
   If F(1) < S1 Then F(1) = F(1) + (F(2) / 1100)
+
+
+  ' Fortune prayer: decay luck boost
+  If LCKTTL > 0 Then
+    LCKTTL = LCKTTL - 1
+    If LCKTTL = 0 Then F(6) = F(6) - LCKBOOST : LCKBOOST = 0
+  EndIf
 
 
   DrawHero
@@ -329,6 +340,7 @@ Sub DrawCell(x As Integer, y As Integer)
   EndIf
   Box px, py, TW, TW, 0, CFLOOR, CFLOOR
   If code = C0 Then Exit Sub
+  If code = C6 And TVIS(x,y) = 0 And F(4) <= 6 Then Exit Sub
   g = code - 224
   DrawGlyph px, py, g, TCOL(g)
 End Sub
@@ -358,7 +370,7 @@ Sub Look(x As Integer, y As Integer)
   rm = R(x,y)
   If Abs(DX) < 4 Then Exit Sub
   If rm <= C7 Then Exit Sub
-  MT = rm : MSTR = MT - C2 : MV = MSTR / 16 : MS = MSTR * 6
+  MT = rm : MSTR = MT - C2 : MV = (MSTR / 16) * (MSPEED / 2.0) : MS = MSTR * 6
   DX = 3 : LX = x : LY = y : MSTEP = 0
 End Sub
 
@@ -390,7 +402,12 @@ Sub ShowStatus
   att = Int(F(1) + OBJ(1)+OBJ(2)+OBJ(3)+OBJ(4)+OBJ(5)+OBJ(7)+OBJ(8))
   If FIXFLAIL = 1 Then att = att + OBJ(6)
   s$ = "ATT" + RPad$(NS$(att), 4) + "  SPL" + RPad$(NS$(Int(SPL(1)+SPL(2)+SPL(3)+SPL(4)+SPL(5)+SPL(6))), 3)
-  s$ = s$ + "  LGT" + RPad$(NS$(LT), 3) + "  POT" + RPad$(NS$(OBJ(23)+OBJ(24)), 3)
+  If CLASS$ = "CLERIC" Then
+    s$ = s$ + "  PRY" + RPad$(NS$(Int(PRY(1)+PRY(2)+PRY(3))), 3)
+  Else
+    s$ = s$ + "  LGT" + RPad$(NS$(LT), 3)
+  EndIf
+  s$ = s$ + "  POT" + RPad$(NS$(OBJ(23)+OBJ(24)), 3)
   If s$ <> FLDC$(8) Then
     FLDC$(8) = s$
     Text 4, YSTA, Pad$(s$, 40), "LT", 1, 1, CBTXT, CBBG
@@ -585,6 +602,70 @@ Sub Quaff
     F(2) = S2 : OBJ(23) = OBJ(23) - 1
     SayFor "THE SALVE HEALS THEE"
   EndIf
+End Sub
+
+
+Sub Pray
+  Local Integer j, sl2
+  Local k$
+  Text 4, YMSG, Pad$("1 LIGHT   2 HEAL   3 FORTUNE", 39), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YSTA, Pad$("", 39), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YHRO, Pad$("WHICH PRAYER?  (0 TO CANCEL)", 40), "LT", 1, 1, CMSGC, CBBG
+
+
+  Do
+    Do
+      k$ = Inkey$
+      If k$ = "" Then Pause 5
+    Loop Until k$ <> ""
+    sl2 = Val(k$)
+    If sl2 = 0 Then Exit Do
+    If sl2 > 3 Then sl2 = -1
+  Loop Until sl2 > 0
+
+
+  FLDC$(8) = "" : FLDC$(0) = ""
+  Say ""
+  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, 40), "LT", 1, 1, CHERO, CBBG
+  ShowStatus
+  If sl2 <= 0 Then Exit Sub
+
+
+  PRY(sl2) = PRY(sl2) - 1
+  If PRY(sl2) < 0 Then
+    PRY(sl2) = 0
+    SayFor "THY PRAYERS ARE SPENT"
+    Exit Sub
+  EndIf
+
+
+  Select Case sl2
+    Case 1                                  ' light (same as Reveal)
+      Local Integer x, y
+      For y = NY - 3 To NY + 3
+        For x = NX - 3 To NX + 3
+          If x > 0 And x < 16 And y > 0 And y < 16 Then Look x, y
+        Next x
+      Next y
+      Snd 200 : Snd 100
+      SayFor "THE DARKNESS LIFTS"
+
+
+    Case 2                                  ' heal (same as Mend spell)
+      F(2) = F(2) + Dice(Int(PRY(2)) + 1)
+      F(1) = F(1) + Dice(Int(PRY(2)) + 1)
+      Snd 80 : Snd 160
+      SayFor "THY WOUNDS CLOSE"
+
+
+    Case 3                                  ' fortune (boost luck)
+      If LCKTTL > 0 Then F(6) = F(6) - LCKBOOST
+      LCKBOOST = 3 + Dice(3)
+      LCKTTL = 20 + Dice(10)
+      F(6) = F(6) + LCKBOOST
+      Snd 120 : Snd 240
+      SayFor "FORTUNE SMILES UPON THEE"
+  End Select
 End Sub
 
 
@@ -786,6 +867,7 @@ Sub LoadLevel(n As Integer)
   For y = 1 To 15
     For x = 1 To 15
       SEEN(x,y) = 0
+      TVIS(x,y) = 0
     Next x
   Next y
   Open f$ For Input As #1
@@ -901,6 +983,14 @@ Sub LoadHero(fn$)
   Line Input #1, ln$ : TR = Val(ln$)
   For i = 1 To 6 : Line Input #1, ln$ : SPL(i) = Val(ln$) : Next i
   Line Input #1, ln$ : LT = Val(ln$)
+  ' prayer charges (added for cleric mechanic)
+  For i = 1 To 3
+    If Eof(#1) Then PRY(i) = 0 Else Line Input #1, ln$ : PRY(i) = Val(ln$)
+  Next i
+  If Eof(#1) Then LCKBOOST = 0 Else Line Input #1, ln$ : LCKBOOST = Val(ln$)
+  If Eof(#1) Then LCKTTL = 0 Else Line Input #1, ln$ : LCKTTL = Val(ln$)
+  If Eof(#1) Then NEEDEXP = 0 Else Line Input #1, ln$ : NEEDEXP = Val(ln$)
+  If Eof(#1) Then MSPEED = 2 Else Line Input #1, ln$ : MSPEED = Val(ln$)
   Close #1
 End Sub
 
@@ -923,6 +1013,11 @@ Sub SaveHero(fn$)
   Print #1, NS$(TR)
   For i = 1 To 6 : Print #1, Str$(SPL(i)) : Next i
   Print #1, NS$(LT)
+  For i = 1 To 3 : Print #1, Str$(PRY(i)) : Next i
+  Print #1, Str$(LCKBOOST)
+  Print #1, Str$(LCKTTL)
+  Print #1, NS$(NEEDEXP)
+  Print #1, NS$(MSPEED)
   Close #1
 End Sub
 
@@ -968,9 +1063,10 @@ Sub Lore
   Text 160, 60,  "M MOVE FORWARD    B/N TURN", "CT", 1, 1, CBTXT, CBG
   Text 160, 76,  "A ATTACK THE BEAST BEFORE THEE", "CT", 1, 1, CBTXT, CBG
   Text 160, 92,  "G GET WHAT LIES AHEAD", "CT", 1, 1, CBTXT, CBG
-  Text 160, 108, "P QUAFF A POTION OR SALVE", "CT", 1, 1, CBTXT, CBG
-  Text 160, 124, "R LOOK ABOUT, SPENDS LAMP OIL", "CT", 1, 1, CBTXT, CBG
-  Text 160, 140, "C CAST A SPELL    S SAVE AND STOP", "CT", 1, 1, CBTXT, CBG
+  Text 160, 108, "Q QUAFF A POTION OR SALVE", "CT", 1, 1, CBTXT, CBG
+  Text 160, 124, "P PRAY (CLERIC ONLY)", "CT", 1, 1, CBTXT, CBG
+  Text 160, 140, "R LOOK ABOUT, SPENDS LAMP OIL", "CT", 1, 1, CBTXT, CBG
+  Text 160, 156, "C CAST A SPELL    S SAVE AND STOP", "CT", 1, 1, CBTXT, CBG
   Text 160, 176, "1 SMITE      SLAY THE BEAST", "CT", 1, 1, CPLAB, CBG
   Text 160, 192, "2 WARD       A CIRCLE OF SAFETY", "CT", 1, 1, CPLAB, CBG
   Text 160, 208, "3 TRANSPORT  GO ELSEWHERE", "CT", 1, 1, CPLAB, CBG
@@ -983,6 +1079,29 @@ Sub Lore
   Redraw
   DrawHero
   ShowStatus
+End Sub
+
+
+Sub Options
+  Local k$
+  Do
+    CLS CBG
+    Text 160, 30, "OPTIONS", "CT", 1, 2, CHERO, CBG
+    If NEEDEXP = 0 Then
+      Text 160, 100, "E  EXPERIENCE GATE: OFF", "CT", 1, 1, CBTXT, CBG
+    Else
+      Text 160, 100, "E  EXPERIENCE GATE: ON", "CT", 1, 1, CBTXT, CBG
+    EndIf
+    Text 160, 140, "S  MONSTER SPEED:   " + NS$(MSPEED), "CT", 1, 1, CBTXT, CBG
+    Text 160, 200, "ENTER TO BEGIN", "CT", 1, 1, CTTXT, CBG
+    k$ = WaitKey$()
+    If k$ = "E" Then
+      If NEEDEXP = 0 Then NEEDEXP = 1 Else NEEDEXP = 0
+    ElseIf k$ = "S" Then
+      MSPEED = MSPEED + 1
+      If MSPEED > 3 Then MSPEED = 1
+    EndIf
+  Loop Until k$ = Chr$(13)
 End Sub
 
 
@@ -1020,6 +1139,7 @@ Sub LoadGame
       End
     EndIf
     LoadHero DPATH$ + "/HERO.DAT"
+    Options
   EndIf
 
 
@@ -1034,6 +1154,11 @@ Sub LoadGame
     Next i
     LT = 0
     If OBJ(16) = 1 Then LT = 20
+    ' prayer charges for clerics, same formula as spells
+    For i = 1 To 3
+      If CLASS$ = "CLERIC" Then PRY(i) = Int(F(7)) + 2 Else PRY(i) = 0
+    Next i
+    LCKBOOST = 0 : LCKTTL = 0
     LE = 1
   EndIf
   If LE < 1 Then LE = 1
