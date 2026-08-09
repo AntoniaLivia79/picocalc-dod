@@ -126,6 +126,62 @@ Because later rules override earlier ones, you must also ensure you **don't** ac
 
 > **Tip:** Attributes are rolled as 1d5 + 2 (range 3–7) and you receive 3–8 spare points to distribute. The class display updates live as you move points around.
 
+### Equipment Shops
+
+After spending spare attribute points you visit three shops with a purse of 120–180 gold coins. Items below index 23 can only be bought once; salves and potions may be purchased repeatedly. You can **Buy** at list price or **Offer** a lower amount (up to 3 gold discount chosen randomly).
+
+Class restrictions use a five-class mask (Wanderer / Cleric / Magician / Warrior / Barbarian). A "✗" means the class **cannot** buy that item.
+
+#### Armoury (Weapons)
+
+Weapons add directly to your **ATT** (attack) total. ATT = STR + the sum of all weapon item values you carry. A hit deals ATT + a Luck die roll, reduced by the monster's toughness. Monsters can permanently destroy one piece of equipment when they strike you (items 1–11 are vulnerable).
+
+| # | Item | Cost | Qty | ATT bonus | Wanderer | Cleric | Magician | Warrior | Barbarian |
+|---|------|------|-----|-----------|----------|--------|----------|---------|-----------|
+| 1 | 2 Hand Sword | 20 | 5 | +5 | ✗ | ✗ | ✗ | ✗ | ✓ |
+| 2 | Broadsword | 16 | 4 | +4 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 3 | Short Sword | 12 | 3 | +3 | ✓ | ✗ | ✗ | ✓ | ✓ |
+| 4 | Axe | 15 | 3 | +3 | ✓ | ✗ | ✗ | ✓ | ✓ |
+| 5 | Mace | 8 | 2 | +2 | ✓ | ✗ | ✗ | ✓ | ✓ |
+| 6 | Flail | 10 | 2 | +2 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 7 | Dagger | 8 | 1 | +1 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 8 | Gauntlet | 6 | 1 | +1 | ✓ | ✗ | ✗ | ✓ | ✓ |
+
+> **Note on the Flail:** The original listing omitted the flail from the attack formula. The port includes a bug-fix flag (`FIXFLAIL = 1`) so the flail now contributes to ATT as expected.
+
+#### Accoutrements (Armour & Defence)
+
+Armour items reduce incoming monster damage. The formula divides raw damage by (3 + sum of all armour item values), so each point raises your effective toughness. Armour items 9–11 and helmets 13–14 can be destroyed by monster strikes.
+
+| # | Item | Cost | Qty | Defence bonus | Wanderer | Cleric | Magician | Warrior | Barbarian |
+|---|------|------|-----|---------------|----------|--------|----------|---------|-----------|
+| 9 | Heavy Armour | 18 | 5 | +5 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 10 | Chain Armour | 15 | 4 | +4 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 11 | Leather Armour | 9 | 3 | +3 | ✓ | ✗ | ✗ | ✓ | ✓ |
+| 12 | Heavy Robe | 9 | 1 | +1 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 13 | Gold Helmet | 14 | 2 | +2 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 14 | Headpiece | 8 | 1 | +1 | ✓ | ✓ | ✗ | ✓ | ✓ |
+| 15 | Shield | 6 | 3 | — | ✓ | ✓ | ✗ | ✓ | ✓ |
+| 16 | Torch | 6 | 1 | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+- **Shield** — has no direct stat bonus in the current code; it occupies an equipment slot and can be destroyed by monsters (absorbing a hit that would otherwise break something else).
+- **Torch** — grants 20 lamp oil charges, used by pressing `R` to reveal the 7×7 area around you.
+
+#### Emporium (Magic & Consumables)
+
+| # | Item | Cost | Qty | Effect | Wanderer | Cleric | Magician | Warrior | Barbarian |
+|---|------|------|-----|--------|----------|--------|----------|---------|-----------|
+| 17 | Necronomicon | 20 | 4 | Grants spells 1–3 (SMITE, WARD, TRANSPORT). Each spell receives AURA charges. | ✓ | ✓ | ✓ | ✗ | ✗ |
+| 18 | Scrolls | 15 | 3 | Grants spells 4–6 (MEND, CHAOS, RENEWAL). Each spell receives AURA charges. | ✗ | ✗ | ✓ | ✗ | ✗ |
+| 19 | Ring | 14 | 2 | No mechanical effect (flavour item). | ✓ | ✓ | ✓ | ✗ | ✗ |
+| 20 | Mystic Amulet | 12 | 2 | No mechanical effect (flavour item). | ✓ | ✗ | ✓ | ✗ | ✗ |
+| 21 | Sash | 10 | 3 | No mechanical effect (flavour item). | ✓ | ✓ | ✓ | ✗ | ✗ |
+| 22 | Cloak | 8 | 1 | No mechanical effect (flavour item). | ✓ | ✓ | ✓ | ✗ | ✗ |
+| 23 | Healing Salve | 6 | 1 | Restores VIT to peak when quaffed (`Q`). Can be bought multiple times. | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 24 | Potions | 6 | 1 | Restores STR to peak when quaffed (`Q`). Can be bought multiple times. | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+> **Qty** is the number of units one purchase provides. For weapons and armour this value doubles as the stat bonus (a 2 Hand Sword gives 5 quantity points which all add to ATT). For consumables it is the number of uses gained.
+
 ---
 
 ## DOOM.BAS — The Game
