@@ -191,7 +191,7 @@ Bumping into a wall, monster, or loose object costs a sliver of STR.
 
 Every tick in which you press any key saps 1% of your STR — action is effort. Bumping obstacles costs a little more, and traps grind you down while they hold you.
 
-Whenever STR is below its peak it recovers slowly, at a rate set by your VIT — the hardier the hero, the faster the wind returns. Stand still a moment and watch it climb. A potion (`P`) restores STR to its peak at once.
+Whenever STR is below its peak it recovers slowly, at a rate set by your VIT — the hardier the hero, the faster the wind returns. Stand still a moment and watch it climb. A potion (`Q`) restores STR to its peak at once.
 
 The STR figure in the panel is rounded to the nearest whole point, so small wear and recovery won't show until it amounts to something.
 
@@ -238,7 +238,7 @@ Press `G` (or `↓`) to grab what is one square ahead of you.
 
 ### Potions and salves
 
-Press `P` to quaff. The game uses a potion first if STR is below its peak, otherwise uses a salve if VIT is below its peak.
+Press `Q` to quaff. The game uses a potion first if STR is below its peak, otherwise uses a salve if VIT is below its peak.
 
 - **Potion** — restores STR to its peak value
 - **Salve** — restores VIT to its peak value
@@ -267,6 +267,20 @@ Each spell costs one charge. Casting with no charges left wastes the action. Spe
 
 Press `0` to cancel the spell menu without casting.
 
+### Prayers (Cleric only)
+
+Press `P` to open the prayer menu. Only heroes with the **Cleric** class can pray. Prayers have a limited number of charges (based on AURA + 2 at character creation), similar to spells.
+
+| # | Name | Effect |
+|---|------|--------|
+| 1 | LIGHT | Reveals the 7×7 area around you (same as lamp oil reveal, but free of oil) |
+| 2 | HEAL | Restores a small amount of STR and VIT (same as the Mend spell) |
+| 3 | FORTUNE | Boosts Luck by 3–6 points for 20–30 ticks |
+
+Press `0` to cancel the prayer menu without praying.
+
+The status bar shows `PRY` (total prayer charges remaining) in place of `LGT` for Clerics.
+
 ### Key reference
 
 Press `?` in-game to show the lore screen.
@@ -279,7 +293,8 @@ Press `?` in-game to show the lore screen.
 | `↓` / `G` | Pick up ahead |
 | `A` | Attack |
 | `C` | Cast spell |
-| `P` | Quaff potion or salve |
+| `Q` | Quaff potion or salve |
+| `P` | Pray (Cleric only) |
 | `R` | Reveal area (costs lamp oil) |
 | `S` | Save and stop |
 | `?` | Show lore screen |
