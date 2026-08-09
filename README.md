@@ -75,6 +75,42 @@ Writes `LEVEL1.DAT` through `LEVELn.DAT` and a `DUNGEON.DAT` index to `B:/DOOM/`
 
 Rolls stats and equips a hero, then writes `HERO.DAT` to `B:/DOOM/`.
 
+### Character Classes
+
+Your class is determined automatically from your attributes after spending spare points. The checks are evaluated in order — later matches override earlier ones, so if you qualify for both Cleric and Warrior you become a Warrior.
+
+| # | Class | Requirements |
+|---|-------|--------------|
+| 1 | **Wanderer** | Default — any hero who meets no other criteria |
+| 2 | **Cleric** | INT > 6 **and** MORALITY > 7 |
+| 3 | **Magician** | INT > 8 **and** AURA > 7 |
+| 4 | **Warrior** | STR > 7 **and** MORALITY > 5 **and** STR + VIT > 10 |
+| 5 | **Barbarian** | STR > 8 **and** VIT + AGI > 12 **and** MORALITY < 6 |
+
+#### Minimum attributes to guarantee each class
+
+Because later rules override earlier ones, you must also ensure you **don't** accidentally qualify for a higher-numbered class.
+
+| Class | Minimum build | Key constraints |
+|-------|--------------|-----------------|
+| **Wanderer** | No special requirements | Fail all other class checks — keep INT ≤ 6, STR ≤ 7, and (STR ≤ 8 or VIT+AGI ≤ 12 or MORALITY ≥ 6) |
+| **Cleric** | INT 7, MORALITY 8 | Must also fail Magician (keep INT ≤ 8 or AURA ≤ 7), fail Warrior (keep STR ≤ 7 or MORALITY ≤ 5 or STR+VIT ≤ 10), and fail Barbarian (keep STR ≤ 8 or VIT+AGI ≤ 12 or MORALITY ≥ 6) |
+| **Magician** | INT 9, AURA 8 | Must also fail Warrior (keep STR ≤ 7 or MORALITY ≤ 5 or STR+VIT ≤ 10) and fail Barbarian (keep STR ≤ 8 or VIT+AGI ≤ 12 or MORALITY ≥ 6) |
+| **Warrior** | STR 8, MORALITY 6, and STR+VIT > 10 (e.g. STR 8 + VIT 3) | Must also fail Barbarian (keep STR ≤ 8 or VIT+AGI ≤ 12 or MORALITY ≥ 6). Since MORALITY ≥ 6, Barbarian is already blocked |
+| **Barbarian** | STR 9, VIT+AGI > 12 (e.g. VIT 7 + AGI 6), MORALITY ≤ 5 | Highest priority — no further checks needed |
+
+#### Practical example builds (using minimum spare points)
+
+| Class | STR | VIT | AGI | INT | LUCK | AURA | MORALITY |
+|-------|-----|-----|-----|-----|------|------|----------|
+| Wanderer | 5 | 5 | 5 | 5 | 5 | 5 | 5 |
+| Cleric | 5 | 5 | 5 | 7 | 5 | 5 | 8 |
+| Magician | 5 | 5 | 5 | 9 | 5 | 8 | 5 |
+| Warrior | 8 | 3 | 3 | 3 | 3 | 3 | 6 |
+| Barbarian | 9 | 7 | 6 | 3 | 3 | 3 | 3 |
+
+> **Tip:** Attributes are rolled as 1d5 + 2 (range 3–7) and you receive 3–8 spare points to distribute. The class display updates live as you move points around.
+
 ---
 
 ## DOOM.BAS — The Game
