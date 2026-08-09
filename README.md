@@ -85,7 +85,7 @@ Every hero has eight attributes rolled during character creation (1d5 + 2, range
 | **Vitality** | VIT | Maximum hit-point ceiling and recovery rate. The higher your VIT, the faster STR regenerates. Slowly depleted when you take damage. Restored by salves or the RENEWAL spell. |
 | **Agility** | AGI | Determines whether a monster's blow connects — higher AGI (combined with Luck) lets you dodge attacks. Also factors into attack accuracy. Contributes to final score. |
 | **Intelligence** | INT | Determines class at creation (Cleric requires INT > 6; Magician requires INT > 8). During play, a hero with INT above 6 can detect hidden traps — they are always visible on the map. Lower-INT heroes only see a trap after stepping on it. |
-| **Experience** | EXP | Grows as you kill monsters (+0.1), collect treasure (+0.05), and claim the Idol (+0.2). Multiplies gold in the final score formula. If the optional `NEEDEXP` gate is enabled, you must earn enough experience to descend stairs. |
+| **Experience** | EXP | Grows as you kill monsters (+0.1), land hits (+0.05), and cast spells (+0.2). Multiplies gold in the final score formula. If the optional experience gate is enabled, you must earn enough experience (one per level) to descend stairs. |
 | **Luck** | LCK | Adds randomness to your attacks, helps you dodge monster blows, and determines how quickly you escape traps (must roll under Luck once STR falls below 80% of peak). |
 | **Aura** | AUR | Magical energy. Required to cast spells (must be > 0). The MEND and RENEWAL spells each cost one point of Aura. Also scales spell charge counts when a level is loaded. |
 | **Morality** | MOR | Used only during character creation to determine class and restrict shop purchases. Has no mechanical effect during play. |
@@ -211,7 +211,7 @@ Chosen options are saved with your hero, so they persist across save/resume cycl
 
 ## Playing the Game
 
-The game runs in real time. Monsters move every tick whether you act or not. Tarry not.
+The game runs in real time — one tick is 120 ms. Monsters move every tick whether you act or not. Tarry not.
 
 ### Screen layout
 
@@ -264,6 +264,10 @@ The STR figure in the panel is rounded to the nearest whole point, so small wear
 
 If STR ever falls below one the hero dies, whether by blows or by sheer exhaustion. Keep a potion for the long fights.
 
+### Visibility
+
+Your hero automatically lights the 3×3 area around them every tick — any square you walk next to becomes permanently visible. Pressing `R` (or the LIGHT prayer) lights a wider 7×7 area at a cost. Squares you have never lit remain pitch black on the map. Revealing a square may also wake a monster sleeping on it.
+
 ### Tiles
 
 Only squares you have already lit are visible. Unexplored passages stay dark.
@@ -281,7 +285,21 @@ Only squares you have already lit are visible. Unexplored passages stay dark.
 | `O` | Magic circle — you cannot be damaged while standing on it |
 | `a` `b` `c` | Monsters, weakest to worst |
 
-Walking onto the stair tile (`>`) descends automatically.
+Walking onto the stair tile (`>`) descends automatically (only triggers the first time you step on it; standing still does not repeatedly descend). If no deeper level file exists, the game says "THIS IS THE DEEPEST LEVEL" and you stay put.
+
+### Monsters
+
+There are three monster tiers. Only **one monster can be active** at a time — the game tracks a single pursuer. If a second monster is lit while the first is still alive, it sits dormant until the active one is slain.
+
+| Tile | Tier | Hit Points | Speed | Strength |
+|------|------|-----------|-------|----------|
+| `a` | Weakest | 54 | Slow | 9 |
+| `b` | Medium | 72 | Medium | 10 |
+| `c` | Worst | 90 | Fast | 11 |
+
+- **Aggro:** A monster activates the moment you light the square it occupies (by walking adjacent or using Reveal). Once active it moves toward you every tick at its speed rate.
+- **Movement:** Monsters close one full square per accumulated fractional steps. They path directly toward you, blocked only by walls and other non-floor tiles.
+- **Adjacent attacks:** When a monster is within one square of you (and you are not standing on a magic circle), it automatically attempts to hit you each tick.
 
 A trap (`^`) snares you in place while your exertion drains STR. Only once STR has worn below 80% of its peak can a roll of your LUCK spring you free — a trap is always a costly detour.
 
@@ -289,11 +307,32 @@ Traps are **hidden** until you step on one, at which point it becomes permanentl
 
 ### Combat
 
-Press `A` to attack the monster that has closed with you. Once a monster is spotted it hunts you, and `A` strikes at it when it is near, whichever way you face — only grabbing and the CHAOS spell insist on facing.
+Press `A` to attack the active monster. You can attack from any facing — only grabbing and the CHAOS spell require you to face the target.
 
-Your attack connects if Agility plus Luck beats the monster's roll. A miss does no damage. A hit deals damage based on your STR plus any weapons carried, reduced by the monster's toughness. Monsters strike back automatically when adjacent — armour and a helmet reduce what gets through.
+#### Your attack
 
-A monster can smash one piece of your equipment when it hits. Killing a monster adds an EXP bonus.
+1. **Damage roll:** ATT + 1d(Luck). ATT = STR + all weapon bonuses.
+2. **Hit check:** If your AGI + Luck < 1d(monster strength) + 2, the blow misses and deals zero damage.
+3. **On hit:** Monster HP is reduced by the damage roll. You lose a tiny bit of STR (damage / 100) from the effort, and gain +0.05 EXP.
+4. **Kill:** When monster HP drops below 1, it dies and you gain +0.1 EXP.
+
+#### Monster attack (automatic each tick when adjacent)
+
+1. **Dodge check:** If (monster strength × 0.5) × 12 < your Luck + Agility, the monster's blow fails to connect and nothing happens.
+2. **Damage dealt:** Raw damage = monster strength × 0.5, divided by (3 + sum of all armour bonuses). The result is subtracted from STR. A fraction of the damage (÷ 101) also chips away at VIT.
+3. **Equipment break:** The monster rolls 1d(strength). On a roll of 1, one of your equipment items (weapons and armour, slots 1–11) is permanently destroyed. The first non-zero item found is smashed.
+4. **Magic circle immunity:** If you are standing on a magic circle tile (`O`), the monster cannot harm you at all — no damage, no equipment break.
+
+#### Killing monsters for EXP
+
+| Source | EXP gained |
+|--------|-----------|
+| Landing a hit (even if monster survives) | +0.05 |
+| Killing a monster | +0.1 |
+| Casting any spell | +0.2 |
+| Grabbing the Lost Idol | quest ends |
+
+> **Note:** Picking up treasure does **not** grant EXP during play — it only contributes to your final score.
 
 ### Picking things up
 
@@ -323,16 +362,18 @@ Press `C` to open the spell menu. Requires AURA above zero and at least one spel
 - The **Necronomicon** grants spells 1–3.
 - The **Scrolls** grant spells 4–6.
 
+**Spell charges at game start:** Each of the three spells from a book receives charges equal to your AURA stat. For example, AURA 5 with the Necronomicon gives 5 charges of SMITE, 5 of WARD, and 5 of TRANSPORT.
+
 | # | Name | Effect |
 |---|------|--------|
-| 1 | SMITE | Instantly slays the monster in front of you |
-| 2 | WARD | Lays a magic circle (`O`) beneath your feet |
-| 3 | TRANSPORT | Teleports you to a random square on the level |
-| 4 | MEND | Heals a small amount of STR and VIT |
-| 5 | CHAOS | Randomly remakes the tile directly ahead — can clear a monster or obstacle |
-| 6 | RENEWAL | Fully restores STR and VIT |
+| 1 | SMITE | Instantly slays the active monster, wherever it is |
+| 2 | WARD | Lays a magic circle (`O`) beneath your feet (only on empty floor) |
+| 3 | TRANSPORT | Teleports you to a random square — **dangerous**, you may land on a wall, trap, or monster |
+| 4 | MEND | Heals STR and VIT by a small random amount (1d remaining charges). Costs 1 AURA. |
+| 5 | CHAOS | Randomly remakes the tile directly ahead — can clear a monster, wall, or obstacle. Cycles through several random tiles then leaves empty floor. |
+| 6 | RENEWAL | Fully restores STR and VIT to peak values. Costs 1 AURA. |
 
-Each spell costs one charge. Casting with no charges left wastes the action. Spells 4 and 6 also drain one point of AURA.
+Each spell costs one charge. Casting with no charges left wastes the action. **Every successful cast also grants +0.2 EXP.**
 
 Press `0` to cancel the spell menu without casting.
 
@@ -377,3 +418,17 @@ Grab the Lost Idol (`&`) on the deepest level to complete the quest. Your final 
 ```
 
 If STR reaches zero, your hero expires. The level they fell on is shown on the death screen.
+
+---
+
+## Tips and Strategy
+
+- **Buy heavy armour if you can.** The defence formula divides damage by (3 + armour), so heavy armour (+5) nearly halves incoming damage compared to being unarmoured.
+- **Potions are cheap — stock up.** Multiple potion purchases stack. Each one fully restores STR in an emergency.
+- **Stand on magic circles during tough fights.** You are completely immune to monster damage while on one, and the WARD spell can create them anywhere.
+- **Use SMITE on `c`-tier monsters.** The worst monsters have 90 HP and hit hard — a single spell charge is worth more than the STR you'll lose fighting them.
+- **INT > 6 is always useful.** Seeing traps before you step on them saves potions and keeps you moving.
+- **Only one monster hunts at a time.** You can avoid waking a second monster by not revealing the square it stands on until the first is dead.
+- **Transport is risky.** You may teleport into a wall (stuck bumping) or onto a trap. Use it only when cornered.
+- **The Cleric's LIGHT prayer replaces the torch.** Clerics don't need lamp oil — each LIGHT prayer reveals the same 7×7 area for free.
+- **Rest to heal.** Standing still costs nothing and STR regenerates at VIT/1100 per tick. Between fights, pause to recover.
