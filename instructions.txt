@@ -1,0 +1,855 @@
+========================================
+        DUNGEON OF DOOM
+========================================
+
+Deep below the ground are the dungeons
+of the ruined castle Crekkan. In it lies
+the magic idol, stolen from the
+villagers by an evil wizard. Many
+adventurers have tried to retrieve this
+magic idol, but so far, none have
+returned, except one. Before dying, he
+told of hoards of monsters and traps.
+
+The villagers are getting worried that
+if the evil wizard returns, he will
+surely use the idol to take over the
+village. Are you ready to try?
+
+Ported from BBC BASIC to PicoMite BASIC
+for the PicoCalc (320x320).
+
+Originally from Usborne's "Write Your
+Own Fantasy Games For Your
+Microcomputer".
+
+
+========================================
+SETUP
+========================================
+
+The game consists of three BASIC
+programs. Copy all three to the SD card
+folder B:/picomite/games/rpg/DOOM :
+
+  DOOM/DUNGEN.BAS
+  DOOM/CHARGEN.BAS
+  DOOM/DOOM.BAS
+
+On PicoMite, A: is internal flash and B:
+is the SD card. The data paths are set
+in two variables at the top of each
+program and can be changed there (the
+programs create missing folders
+themselves):
+
+  Dim DPATH$ =
+    "B:/picomite/games/rpg/DOOM"
+  Dim SPATH$ =
+    "B:/picomite/games/rpg/DOOM/SAVE"
+
+FIRST-TIME SETUP
+----------------------------------------
+Run the programs in this order before
+playing for the first time:
+
+  1. DUNGEN.BAS - design and save your
+     dungeon levels
+  2. CHARGEN.BAS - roll and equip a hero
+  3. DOOM.BAS - play the game
+
+After the initial setup you can go
+straight to DOOM.BAS each time.
+
+
+========================================
+DUNGEN.BAS - LEVEL DESIGNER
+========================================
+
+Writes LEVEL1.DAT through LEVELn.DAT and
+a DUNGEON.DAT index to B:/DOOM/.
+
+DUNGEON.DAT records the total number of
+levels so the game can display "LEVEL 2
+OF 5".
+
+CONTROLS
+----------------------------------------
+  Arrows or HJKL  Move cursor
+  1   Place WALL
+  2   Place VASE
+  3   Place TREASURE
+  4   Place LOST IDOL
+  5   Place ENTRANCE
+  6   Place EXIT
+  7   Place TRAP
+  8   Place SAFE PLACE
+  9   Place MONSTER
+  0   Erase tile
+  R   Conjure a random level
+  E   Wipe the level
+  N   Save, go one level deeper
+  S   Save and stop
+  Q   Quit without saving
+  ?   Show tile lore
+
+NOTES
+----------------------------------------
+- A level cannot be saved until an
+  entrance (5) has been placed.
+- The Lost Idol (4) ends the quest -
+  place it on your deepest level.
+- R generates a complete level - walls,
+  entrance, exit, treasure, traps and
+  monsters - with every square
+  guaranteed reachable from the
+  entrance. Edit the result before
+  saving; the Idol must still be placed
+  by hand. Wall density and item counts
+  are tuning constants at the top of
+  DUNGEN.BAS.
+- Levels already saved are loaded for
+  editing, so you can revise a level
+  without redrawing it from scratch.
+- Rolling a new character or redrawing a
+  level clears the matching save file.
+
+
+========================================
+CHARGEN.BAS - CHARACTER GENERATOR
+========================================
+
+Rolls stats and equips a hero, then
+writes HERO.DAT to B:/DOOM/.
+
+ATTRIBUTES
+----------------------------------------
+Every hero has eight attributes rolled
+during character creation (1d5 + 2,
+range 3-7 each). What each one does in
+practice:
+
+STR - STRENGTH
+  Your current hit points. Falls from
+  exertion, bumps, traps, and monster
+  hits. If it drops below 1 you die.
+  Recovers slowly when idle (rate
+  governed by VIT). Also contributes to
+  your attack damage.
+
+VIT - VITALITY
+  Maximum hit-point ceiling and recovery
+  rate. The higher your VIT, the faster
+  STR regenerates. Slowly depleted when
+  you take damage. Restored by salves or
+  the RENEWAL spell.
+
+AGI - AGILITY
+  Determines whether a monster's blow
+  connects - higher AGI (with Luck) lets
+  you dodge attacks. Also factors into
+  attack accuracy. Contributes to final
+  score.
+
+INT - INTELLIGENCE
+  Determines class at creation (Cleric
+  needs INT > 6; Magician needs INT >
+  8). In play, a hero with INT above 6
+  can detect hidden traps - they are
+  always visible on the map. Lower-INT
+  heroes only see a trap after stepping
+  on it.
+
+EXP - EXPERIENCE
+  Grows as you kill monsters (+0.1),
+  land hits (+0.05), and cast spells
+  (+0.2). Multiplies gold in the final
+  score formula. If the optional
+  experience gate is on, you must earn
+  enough experience (one per level) to
+  descend stairs.
+
+LCK - LUCK
+  Adds randomness to your attacks, helps
+  you dodge monster blows, and sets how
+  quickly you escape traps (must roll
+  under Luck once STR falls below 80% of
+  peak).
+
+AUR - AURA
+  Magical energy. Required to cast
+  spells (must be > 0). The MEND and
+  RENEWAL spells each cost one point of
+  Aura. Also scales spell charge counts
+  when a level is loaded.
+
+MOR - MORALITY
+  Used only during character creation to
+  determine class and restrict shop
+  purchases. No mechanical effect during
+  play.
+
+CHARACTER CLASSES
+----------------------------------------
+Your class is set automatically from
+your attributes after spending spare
+points. The checks run in order - later
+matches override earlier ones, so if you
+qualify for both Cleric and Warrior you
+become a Warrior.
+
+  1 WANDERER
+      Default - meets no other criteria
+  2 CLERIC
+      INT > 6 and MOR > 7
+  3 MAGICIAN
+      INT > 8 and AUR > 7
+  4 WARRIOR
+      STR > 7 and MOR > 5
+      and STR + VIT > 10
+  5 BARBARIAN
+      STR > 8 and VIT + AGI > 12
+      and MOR < 6
+
+MINIMUMS TO GUARANTEE EACH CLASS
+----------------------------------------
+Because later rules override earlier
+ones, you must also make sure you do NOT
+accidentally qualify for a
+higher-numbered class.
+
+WANDERER
+  Build: no special requirements
+  Fail all other checks - keep INT <= 6,
+  STR <= 7, and (STR <= 8 or VIT+AGI <=
+  12 or MOR >= 6)
+
+CLERIC
+  Build: INT 7, MOR 8
+  Must also fail Magician (INT <= 8 or
+  AUR <= 7), fail Warrior (STR <= 7 or
+  MOR <= 5 or STR+VIT <= 10), and fail
+  Barbarian (STR <= 8 or VIT+AGI <= 12
+  or MOR >= 6)
+
+MAGICIAN
+  Build: INT 9, AUR 8
+  Must also fail Warrior (STR <= 7 or
+  MOR <= 5 or STR+VIT <= 10) and fail
+  Barbarian (STR <= 8 or VIT+AGI <= 12
+  or MOR >= 6)
+
+WARRIOR
+  Build: STR 8, MOR 6, STR+VIT > 10
+  (e.g. STR 8 + VIT 3)
+  Must also fail Barbarian - since MOR
+  >= 6, Barbarian is already blocked
+
+BARBARIAN
+  Build: STR 9, VIT+AGI > 12 (e.g. VIT 7
+  + AGI 6), MOR <= 5
+  Highest priority - no further checks
+
+EXAMPLE BUILDS (min spare points)
+----------------------------------------
+Order: STR VIT AGI INT LCK AUR MOR
+
+  Wanderer   5  5  5  5  5  5  5
+  Cleric     5  5  5  7  5  5  8
+  Magician   5  5  5  9  5  8  5
+  Warrior    8  3  3  3  3  3  6
+  Barbarian  9  7  6  3  3  3  3
+
+TIP: Attributes are rolled as 1d5 + 2
+(range 3-7) and you receive 3-8 spare
+points to distribute. The class display
+updates live as you move points around.
+
+EQUIPMENT SHOPS
+----------------------------------------
+After spending spare attribute points
+you visit three shops with a purse of
+120-180 gold coins. Items below index 23
+can only be bought once; salves and
+potions may be bought repeatedly. You
+can BUY at list price or OFFER a lower
+amount (up to 3 gold discount chosen
+randomly).
+
+Class codes: Wan Cle Mag War Bar.
+"Buyers" lists the classes that CAN buy.
+
+ARMOURY (WEAPONS)
+----------------------------------------
+Weapons add directly to your ATT
+(attack) total. ATT = STR + the sum of
+all weapon item values you carry. A hit
+deals ATT + a Luck die roll, reduced by
+the monster's toughness. Monsters can
+permanently destroy one piece of
+equipment when they strike you (items
+1-11 are vulnerable).
+
+ 1 2 HAND SWORD
+     Cost 20  Qty 5  ATT +5
+     Buyers: Bar
+ 2 BROADSWORD
+     Cost 16  Qty 4  ATT +4
+     Buyers: War Bar
+ 3 SHORT SWORD
+     Cost 12  Qty 3  ATT +3
+     Buyers: Wan War Bar
+ 4 AXE
+     Cost 15  Qty 3  ATT +3
+     Buyers: Wan War Bar
+ 5 MACE
+     Cost 8   Qty 2  ATT +2
+     Buyers: Wan War Bar
+ 6 FLAIL
+     Cost 10  Qty 2  ATT +2
+     Buyers: War Bar
+ 7 DAGGER
+     Cost 8   Qty 1  ATT +1
+     Buyers: all classes
+ 8 GAUNTLET
+     Cost 6   Qty 1  ATT +1
+     Buyers: Wan War Bar
+
+NOTE ON THE FLAIL: the original game
+left the flail out of the attack
+formula. This port has a bug-fix flag
+(FIXFLAIL = 1) so the flail now
+contributes to ATT as expected.
+
+ACCOUTREMENTS (ARMOUR & DEFENCE)
+----------------------------------------
+Armour reduces incoming monster damage.
+The formula divides raw damage by (3 +
+sum of all armour item values), so each
+point raises your effective toughness.
+Armour items 9-11 and helmets 13-14 can
+be destroyed by monster strikes.
+
+ 9 HEAVY ARMOUR
+     Cost 18  Qty 5  DEF +5
+     Buyers: War Bar
+10 CHAIN ARMOUR
+     Cost 15  Qty 4  DEF +4
+     Buyers: War Bar
+11 LEATHER ARMOUR
+     Cost 9   Qty 3  DEF +3
+     Buyers: Wan War Bar
+12 HEAVY ROBE
+     Cost 9   Qty 1  DEF +1
+     Buyers: all classes
+13 GOLD HELMET
+     Cost 14  Qty 2  DEF +2
+     Buyers: War Bar
+14 HEADPIECE
+     Cost 8   Qty 1  DEF +1
+     Buyers: Wan Cle War Bar
+15 SHIELD
+     Cost 6   Qty 3  DEF -
+     Buyers: Wan Cle War Bar
+16 TORCH
+     Cost 6   Qty 1  DEF -
+     Buyers: all classes
+
+- SHIELD: no direct stat bonus in the
+  current code; it occupies an equipment
+  slot and can be destroyed by monsters
+  (absorbing a hit that would otherwise
+  break something else).
+- TORCH: grants 20 lamp oil charges,
+  used by pressing R to reveal the 7x7
+  area around you.
+
+EMPORIUM (MAGIC & CONSUMABLES)
+----------------------------------------
+17 NECRONOMICON
+     Cost 20  Qty 4
+     Grants spells 1-3 (SMITE, WARD,
+     TRANSPORT). Each spell gets AURA
+     charges.
+     Buyers: Wan Cle Mag
+18 SCROLLS
+     Cost 15  Qty 3
+     Grants spells 4-6 (MEND, CHAOS,
+     RENEWAL). Each spell gets AURA
+     charges.
+     Buyers: Mag
+19 RING
+     Cost 14  Qty 2
+     Cosmetic item.
+     Buyers: Wan Cle Mag
+20 MYSTIC AMULET
+     Cost 12  Qty 2
+     Cosmetic item.
+     Buyers: Wan Mag
+21 SASH
+     Cost 10  Qty 3
+     Cosmetic item.
+     Buyers: Wan Cle Mag
+22 CLOAK
+     Cost 8   Qty 1
+     Cosmetic item.
+     Buyers: Wan Cle Mag
+23 HEALING SALVE
+     Cost 6   Qty 1
+     Restores VIT to peak when quaffed
+     (Q). Can be bought many times.
+     Buyers: all classes
+24 POTIONS
+     Cost 6   Qty 1
+     Restores STR to peak when quaffed
+     (Q). Can be bought many times.
+     Buyers: all classes
+
+QTY is the number of units one purchase
+provides. For weapons and armour this
+value doubles as the stat bonus (a 2
+Hand Sword gives 5 quantity points which
+all add to ATT). For consumables it is
+the number of uses gained.
+
+
+========================================
+DOOM.BAS - THE GAME
+========================================
+
+Loads the level and hero files and saves
+progress. Run this to play.
+
+SAVING AND RESUMING
+----------------------------------------
+Press S during play. The current map
+state and hero are written to
+B:/DOOM/SAVE/, then the game stops.
+
+On the next run, DOOM.BAS offers RESUME
+or NEW.
+
+The original level files in B:/DOOM/ are
+never overwritten - the game reads a
+saved level if one exists and falls back
+to the original otherwise. Starting a
+new hero gives a fresh dungeon without
+re-running DUNGEN.BAS.
+
+OPTIONS MENU
+----------------------------------------
+When starting a NEW game (not resuming),
+an options screen appears before play
+begins. Press the indicated key to cycle
+each setting, then press ENTER to start.
+
+  E  EXPERIENCE GATE
+       OFF (default) / ON - when ON, you
+       must earn enough experience (one
+       point per level) before the
+       stairs will let you descend.
+  S  MONSTER SPEED
+       1 slow / 2 normal (default) / 3
+       fast - scales how quickly
+       monsters close in on you.
+
+Chosen options are saved with your hero,
+so they persist across save/resume
+cycles.
+
+
+========================================
+PLAYING THE GAME
+========================================
+
+The game runs in real time - one tick is
+120 ms. Monsters move every tick whether
+you act or not. Tarry not.
+
+SCREEN LAYOUT
+----------------------------------------
+The dungeon occupies the left 15x15
+grid. A status panel runs down the right
+side:
+
+  STR   Current hit points
+  VIT   Max hit points, depletes
+        slowly when struck
+  AURA  Magical energy, for spells
+  FACE  Direction faced: N E S W
+  EXP   Experience
+  GOLD  Gold carried
+  TRSR  Treasure pieces found
+
+The bottom bar shows:
+
+  ATT   Total attack (STR + weapons)
+  SPL   Spell charges remaining
+  LGT   Lamp oil charges
+  POT   Potions and salves combined
+
+Your hero (@) changes sprite to show
+which way you face.
+
+MOVEMENT AND FACING
+----------------------------------------
+Your hero always faces one of the four
+compass directions - N, E, S or W. The
+FACE field shows which, and the hero's
+sprite points the same way.
+
+  UP or M     Move forward one square,
+              in the direction faced
+  LEFT or B   Turn left (widdershins)
+  RIGHT or N  Turn right (sunwise)
+
+All movement is forwards. There is NO
+key to step backwards or sideways - this
+is by design, kept from the original BBC
+game's controls. To retreat you must
+turn about (two turns) and then walk,
+and since the game runs in real time the
+monster keeps coming while you turn.
+Choose your facing before trouble
+arrives.
+
+Facing also governs your hands: G grabs
+whatever lies in the square directly
+ahead of you, and the CHAOS spell
+remakes the square directly ahead. Face
+a thing to use it.
+
+Bumping into a wall, monster, or loose
+object costs a sliver of STR.
+
+EXERTION AND REST
+----------------------------------------
+Every tick in which you press any key
+saps 1% of your STR - action is effort.
+Bumping obstacles costs a little more,
+and traps grind you down while they hold
+you.
+
+Whenever STR is below its peak it
+recovers slowly, at a rate set by your
+VIT - the hardier the hero, the faster
+the wind returns. Stand still a moment
+and watch it climb. A potion (Q)
+restores STR to its peak at once.
+
+The STR figure in the panel is rounded
+to the nearest whole point, so small
+wear and recovery won't show until it
+amounts to something.
+
+If STR ever falls below one the hero
+dies, whether by blows or by sheer
+exhaustion. Keep a potion for the long
+fights.
+
+VISIBILITY
+----------------------------------------
+Your hero automatically lights the 3x3
+area around them every tick - any square
+you walk next to becomes permanently
+visible. Pressing R (or the LIGHT
+prayer) lights a wider 7x7 area at a
+cost. Squares you have never lit remain
+pitch black on the map. Revealing a
+square may also wake a monster sleeping
+on it.
+
+TILES
+----------------------------------------
+Only squares you have already lit are
+visible. Unexplored passages stay dark.
+
+  @      Your hero
+  #      Wall - impassable
+  !      Flask - a salve and a potion
+  $      Treasure
+  &      The Lost Idol - quest goal
+  *      Entrance
+  >      Stairs down to next level
+  ^      Trap
+  O      Magic circle - you cannot be
+         damaged while standing on it
+  a b c  Monsters, weakest to worst
+
+Walking onto the stair tile (>) descends
+automatically (only the first time you
+step on it; standing still does not
+repeatedly descend). If no deeper level
+file exists, the game says "THIS IS THE
+DEEPEST LEVEL" and you stay put.
+
+MONSTERS
+----------------------------------------
+There are three monster tiers. Only ONE
+monster can be active at a time - the
+game tracks a single pursuer. If a
+second monster is lit while the first is
+still alive, it sits dormant until the
+active one is slain.
+
+  a  Weakest  HP 54  Slow    STR 9
+  b  Medium   HP 72  Medium  STR 10
+  c  Worst    HP 90  Fast    STR 11
+
+- AGGRO: a monster activates the moment
+  you light the square it occupies (by
+  walking adjacent or using Reveal).
+  Once active it moves toward you every
+  tick at its speed rate.
+- MOVEMENT: monsters close one full
+  square per accumulated fractional
+  steps. They path directly toward you,
+  blocked only by walls and other
+  non-floor tiles.
+- ADJACENT ATTACKS: when a monster is
+  within one square of you (and you are
+  not on a magic circle), it
+  automatically attempts to hit you each
+  tick.
+
+A trap (^) snares you in place while
+your exertion drains STR. Only once STR
+has worn below 80% of its peak can a
+roll of your LUCK spring you free - a
+trap is always a costly detour.
+
+Traps are HIDDEN until you step on one,
+at which point it becomes permanently
+visible on the map. Heroes with high
+Intelligence (INT > 6) can sense all
+traps and always see them.
+
+COMBAT
+----------------------------------------
+Press A to attack the active monster.
+You can attack from any facing - only
+grabbing and the CHAOS spell require you
+to face the target.
+
+YOUR ATTACK
+  1. DAMAGE ROLL: ATT + 1d(Luck). ATT =
+     STR + all weapon bonuses.
+  2. HIT CHECK: if your AGI + Luck <
+     1d(monster strength) + 2, the blow
+     misses and deals zero damage.
+  3. ON HIT: monster HP is reduced by
+     the damage roll. You lose a tiny
+     bit of STR (damage / 100) from the
+     effort, and gain +0.05 EXP.
+  4. KILL: when monster HP drops below
+     1, it dies and you gain +0.1 EXP.
+
+MONSTER ATTACK (auto each tick when
+adjacent)
+  1. DODGE CHECK: if (monster strength x
+     0.5) x 12 < your Luck + Agility,
+     the blow fails to connect and
+     nothing happens.
+  2. DAMAGE DEALT: raw damage = monster
+     strength x 0.5, divided by (3 + sum
+     of all armour bonuses). The result
+     is subtracted from STR. A fraction
+     of the damage (/ 101) also chips
+     away at VIT.
+  3. EQUIPMENT BREAK: the monster rolls
+     1d(strength). On a roll of 1, one
+     of your equipment items (weapons
+     and armour, slots 1-11) is
+     permanently destroyed. The first
+     non-zero item found is smashed.
+  4. MAGIC CIRCLE IMMUNITY: if you are
+     standing on a magic circle tile
+     (O), the monster cannot harm you at
+     all - no damage, no equipment
+     break.
+
+EXP GAINS
+  Landing a hit (even if
+    monster survives)      +0.05
+  Killing a monster        +0.1
+  Casting any spell        +0.2
+  Grabbing the Lost Idol   quest ends
+
+NOTE: picking up treasure does NOT grant
+EXP during play - it only contributes to
+your final score.
+
+PICKING THINGS UP
+----------------------------------------
+Press G (or DOWN) to grab what is one
+square ahead of you.
+
+  !  Flask      One salve and one potion
+  $  Treasure   One treasure piece
+                (adds to TRSR and score)
+  &  Lost Idol  Quest complete -
+                victory screen shown
+
+POTIONS AND SALVES
+----------------------------------------
+Press Q to quaff. The game uses a potion
+first if STR is below its peak,
+otherwise uses a salve if VIT is below
+its peak.
+
+  POTION - restores STR to its peak
+  SALVE  - restores VIT to its peak
+
+LAMP AND DARKNESS
+----------------------------------------
+Press R to reveal - lights the 7x7 area
+around you, costing one lamp oil charge.
+Without oil, the message "NO LIGHT" is
+shown. Squares already visited stay
+visible without spending oil.
+
+SPELLS
+----------------------------------------
+Press C to open the spell menu. Requires
+AURA above zero and at least one
+spellbook or scroll set carried.
+
+- The NECRONOMICON grants spells 1-3.
+- The SCROLLS grant spells 4-6.
+
+SPELL CHARGES AT GAME START: each of the
+three spells from a book receives
+charges equal to your AURA stat. For
+example, AURA 5 with the Necronomicon
+gives 5 charges of SMITE, 5 of WARD, and
+5 of TRANSPORT.
+
+  1 SMITE
+      Instantly slays the active
+      monster, wherever it is
+  2 WARD
+      Lays a magic circle (O) beneath
+      your feet (only on empty floor)
+  3 TRANSPORT
+      Teleports you to a random square -
+      DANGEROUS, you may land on a wall,
+      trap, or monster
+  4 MEND
+      Heals STR and VIT by a small
+      random amount (1d remaining
+      charges). Costs 1 AURA.
+  5 CHAOS
+      Randomly remakes the tile directly
+      ahead - can clear a monster, wall,
+      or obstacle. Cycles through
+      several random tiles then leaves
+      empty floor.
+  6 RENEWAL
+      Fully restores STR and VIT to peak
+      values. Costs 1 AURA.
+
+Each spell costs one charge. Casting
+with no charges left wastes the action.
+Every successful cast also grants +0.2
+EXP.
+
+Press 0 to cancel the spell menu without
+casting.
+
+PRAYERS (CLERIC ONLY)
+----------------------------------------
+Press P to open the prayer menu. Only
+heroes with the CLERIC class can pray.
+Prayers have a limited number of charges
+(based on AURA + 2 at character
+creation), similar to spells.
+
+  1 LIGHT
+      Reveals the 7x7 area around you
+      (same as lamp oil reveal, but free
+      of oil)
+  2 HEAL
+      Restores a small amount of STR and
+      VIT (same as the MEND spell)
+  3 FORTUNE
+      Boosts Luck by 3-6 points for
+      20-30 ticks
+
+Press 0 to cancel the prayer menu
+without praying.
+
+The status bar shows PRY (total prayer
+charges remaining) in place of LGT for
+Clerics.
+
+KEY REFERENCE
+----------------------------------------
+Press ? in-game to show the lore screen.
+
+  UP    / M  Move forward
+  LEFT  / B  Turn left
+  RIGHT / N  Turn right
+  DOWN  / G  Pick up ahead
+  A          Attack
+  C          Cast spell
+  Q          Quaff potion or salve
+  P          Pray (Cleric only)
+  R          Reveal area (lamp oil)
+  S          Save and stop
+  ?          Show lore screen
+
+VICTORY AND DEFEAT
+----------------------------------------
+Grab the Lost Idol (&) on the deepest
+level to complete the quest. Your final
+score is:
+
+  (treasure x 10)
+  + (gold x experience)
+  + STR + VIT + Agility
+
+If STR reaches zero, your hero expires.
+The level they fell on is shown on the
+death screen.
+
+
+========================================
+TIPS AND STRATEGY
+========================================
+
+- BUY HEAVY ARMOUR IF YOU CAN. The
+  defence formula divides damage by (3 +
+  armour), so heavy armour (+5) nearly
+  halves incoming damage compared to
+  being unarmoured.
+- POTIONS ARE CHEAP - STOCK UP. Multiple
+  potion purchases stack. Each one fully
+  restores STR in an emergency.
+- STAND ON MAGIC CIRCLES DURING TOUGH
+  FIGHTS. You are completely immune to
+  monster damage while on one, and the
+  WARD spell can create them anywhere.
+- USE SMITE ON c-TIER MONSTERS. The
+  worst monsters have 90 HP and hit hard
+  - a single spell charge is worth more
+  than the STR you'll lose fighting
+  them.
+- INT > 6 IS ALWAYS USEFUL. Seeing traps
+  before you step on them saves potions
+  and keeps you moving.
+- ONLY ONE MONSTER HUNTS AT A TIME. You
+  can avoid waking a second monster by
+  not revealing the square it stands on
+  until the first is dead.
+- TRANSPORT IS RISKY. You may teleport
+  into a wall (stuck bumping) or onto a
+  trap. Use it only when cornered.
+- THE CLERIC'S LIGHT PRAYER REPLACES THE
+  TORCH. Clerics don't need lamp oil -
+  each LIGHT prayer reveals the same 7x7
+  area for free.
+- REST TO HEAL. Standing still costs
+  nothing and STR regenerates at
+  VIT/1100 per tick. Between fights,
+  pause to recover.
+

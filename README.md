@@ -1,5 +1,12 @@
 # Dungeon of Doom
 
+Deep below the ground are the dungeons of the ruined castle Crekkan. In it lies the magic idol,
+stolen from the villagers by an evil wizard. Many adventurers have tried to retrieve this magic idol,
+but so far, none have returned, except one. Before dying, he told of hoards of monsters and traps.
+
+The villagers are getting worried that if the evil wizard returns, he will surely use the idol to take
+over the village. Are you ready to try?
+
 Ported from BBC BASIC to PicoMite BASIC for the PicoCalc (320×320).
 
 Originally from Usborne's *Write Your Own Fantasy Games For Your Microcomputer*.
@@ -147,7 +154,7 @@ Weapons add directly to your **ATT** (attack) total. ATT = STR + the sum of all 
 | 7 | Dagger | 8 | 1 | +1 | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 8 | Gauntlet | 6 | 1 | +1 | ✓ | ✗ | ✗ | ✓ | ✓ |
 
-> **Note on the Flail:** The original listing omitted the flail from the attack formula. The port includes a bug-fix flag (`FIXFLAIL = 1`) so the flail now contributes to ATT as expected.
+> **Note on the Flail:** The original game omitted the flail from the attack formula. This port includes a bug-fix flag (`FIXFLAIL = 1`) so the flail now contributes to ATT as expected.
 
 #### Accoutrements (Armour & Defence)
 
