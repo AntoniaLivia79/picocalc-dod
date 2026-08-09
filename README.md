@@ -75,6 +75,21 @@ Writes `LEVEL1.DAT` through `LEVELn.DAT` and a `DUNGEON.DAT` index to `B:/DOOM/`
 
 Rolls stats and equips a hero, then writes `HERO.DAT` to `B:/DOOM/`.
 
+### Attributes
+
+Every hero has eight attributes rolled during character creation (1d5 + 2, range 3–7 each). Here is what each one does in practice:
+
+| Attribute | Abbrev | Role during play |
+|-----------|--------|-----------------|
+| **Strength** | STR | Your current hit points. Falls from exertion, bumps, traps, and monster hits. If it drops below 1 you die. Recovers slowly when idle (rate governed by VIT). Also contributes to your attack damage. |
+| **Vitality** | VIT | Maximum hit-point ceiling and recovery rate. The higher your VIT, the faster STR regenerates. Slowly depleted when you take damage. Restored by salves or the RENEWAL spell. |
+| **Agility** | AGI | Determines whether a monster's blow connects — higher AGI (combined with Luck) lets you dodge attacks. Also factors into attack accuracy. Contributes to final score. |
+| **Intelligence** | INT | Used only during character creation to determine class (Cleric requires INT > 6; Magician requires INT > 8). Has no direct mechanical effect during play. |
+| **Experience** | EXP | Grows as you kill monsters (+0.1), collect treasure (+0.05), and claim the Idol (+0.2). Multiplies gold in the final score formula. If the optional `NEEDEXP` gate is enabled, you must earn enough experience to descend stairs. |
+| **Luck** | LCK | Adds randomness to your attacks, helps you dodge monster blows, and determines how quickly you escape traps (must roll under Luck once STR falls below 80% of peak). |
+| **Aura** | AUR | Magical energy. Required to cast spells (must be > 0). The MEND and RENEWAL spells each cost one point of Aura. Also scales spell charge counts when a level is loaded. |
+| **Morality** | MOR | Used only during character creation to determine class and restrict shop purchases. Has no mechanical effect during play. |
+
 ### Character Classes
 
 Your class is determined automatically from your attributes after spending spare points. The checks are evaluated in order — later matches override earlier ones, so if you qualify for both Cleric and Warrior you become a Warrior.
