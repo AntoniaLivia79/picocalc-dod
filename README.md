@@ -140,6 +140,17 @@ On the next run, DOOM.BAS offers **Resume** or **New**.
 
 The original level files in `B:/DOOM/` are never overwritten — the game reads a saved level if one exists and falls back to the original otherwise. Starting a new hero gives a fresh dungeon without re-running DUNGEN.BAS.
 
+### Options menu
+
+When starting a **new** game (not resuming), an options screen appears before play begins. Press the indicated key to cycle each setting, then press **Enter** to start.
+
+| Key | Option | Values |
+|-----|--------|--------|
+| `E` | **Experience gate** | OFF (default) / ON — when ON, you must earn enough experience (one point per level) before the stairs will let you descend. |
+| `S` | **Monster speed** | 1 (slow) / 2 (normal, default) / 3 (fast) — scales how quickly monsters close in on you. |
+
+Chosen options are saved with your hero, so they persist across save/resume cycles.
+
 ---
 
 ## Playing the Game

@@ -23,6 +23,7 @@ Dim Integer FIXMISS  = 1     ' 1 = "MISSED!" really does no damage
 Dim Integer FIXFLAIL = 1     ' 1 = the flail adds to your attack
 Dim Integer FIXMOVE  = 1     ' 1 = monsters can close in from any side
 Dim Integer NEEDEXP  = 0     ' 1 = restore the book's experience gate
+Dim Integer MSPEED   = 2     ' monster speed 1=slow 2=normal 3=fast
 Dim Integer TONEMS   = 40
 Dim Integer NOISEMS  = 30
 
@@ -369,7 +370,7 @@ Sub Look(x As Integer, y As Integer)
   rm = R(x,y)
   If Abs(DX) < 4 Then Exit Sub
   If rm <= C7 Then Exit Sub
-  MT = rm : MSTR = MT - C2 : MV = MSTR / 16 : MS = MSTR * 6
+  MT = rm : MSTR = MT - C2 : MV = (MSTR / 16) * (MSPEED / 2.0) : MS = MSTR * 6
   DX = 3 : LX = x : LY = y : MSTEP = 0
 End Sub
 
@@ -988,6 +989,8 @@ Sub LoadHero(fn$)
   Next i
   If Eof(#1) Then LCKBOOST = 0 Else Line Input #1, ln$ : LCKBOOST = Val(ln$)
   If Eof(#1) Then LCKTTL = 0 Else Line Input #1, ln$ : LCKTTL = Val(ln$)
+  If Eof(#1) Then NEEDEXP = 0 Else Line Input #1, ln$ : NEEDEXP = Val(ln$)
+  If Eof(#1) Then MSPEED = 2 Else Line Input #1, ln$ : MSPEED = Val(ln$)
   Close #1
 End Sub
 
@@ -1013,6 +1016,8 @@ Sub SaveHero(fn$)
   For i = 1 To 3 : Print #1, Str$(PRY(i)) : Next i
   Print #1, Str$(LCKBOOST)
   Print #1, Str$(LCKTTL)
+  Print #1, NS$(NEEDEXP)
+  Print #1, NS$(MSPEED)
   Close #1
 End Sub
 
@@ -1077,6 +1082,29 @@ Sub Lore
 End Sub
 
 
+Sub Options
+  Local k$
+  Do
+    CLS CBG
+    Text 160, 30, "OPTIONS", "CT", 1, 2, CHERO, CBG
+    If NEEDEXP = 0 Then
+      Text 160, 100, "E  EXPERIENCE GATE: OFF", "CT", 1, 1, CBTXT, CBG
+    Else
+      Text 160, 100, "E  EXPERIENCE GATE: ON", "CT", 1, 1, CBTXT, CBG
+    EndIf
+    Text 160, 140, "S  MONSTER SPEED:   " + NS$(MSPEED), "CT", 1, 1, CBTXT, CBG
+    Text 160, 200, "ENTER TO BEGIN", "CT", 1, 1, CTTXT, CBG
+    k$ = WaitKey$()
+    If k$ = "E" Then
+      If NEEDEXP = 0 Then NEEDEXP = 1 Else NEEDEXP = 0
+    ElseIf k$ = "S" Then
+      MSPEED = MSPEED + 1
+      If MSPEED > 3 Then MSPEED = 1
+    EndIf
+  Loop Until k$ = Chr$(13)
+End Sub
+
+
 Sub LoadGame
   Local Integer rsm, i, j
   Local k$
@@ -1111,6 +1139,7 @@ Sub LoadGame
       End
     EndIf
     LoadHero DPATH$ + "/HERO.DAT"
+    Options
   EndIf
 
 
