@@ -65,7 +65,7 @@ Dim Integer TCOL(17)
 
 
 ' ------------------------------------------------- state -----------
-Dim Integer R(15,15), SEEN(15,15)
+Dim Integer R(15,15), SEEN(15,15), TVIS(15,15)
 Dim F(8)                     ' 1 STR 2 VIT 3 AGI 4 INT 5 EXP 6 LCK 7 AUR 8 MOR
 Dim Integer OBJ(24)
 Dim SPL(6)                   ' spell charges
@@ -225,7 +225,7 @@ Do
   EndIf
 
 
-  If RH = C6 Then TX = NX : TY = NY : TF = 1
+  If RH = C6 Then TX = NX : TY = NY : TF = 1 : TVIS(NX,NY) = 1
   If TF = 1 Then NX = TX : NY = TY
   If F(1) < S1 * .8 And Dice(8) < F(6) Then TF = 0
 
@@ -339,6 +339,7 @@ Sub DrawCell(x As Integer, y As Integer)
   EndIf
   Box px, py, TW, TW, 0, CFLOOR, CFLOOR
   If code = C0 Then Exit Sub
+  If code = C6 And TVIS(x,y) = 0 And F(4) <= 6 Then Exit Sub
   g = code - 224
   DrawGlyph px, py, g, TCOL(g)
 End Sub
@@ -865,6 +866,7 @@ Sub LoadLevel(n As Integer)
   For y = 1 To 15
     For x = 1 To 15
       SEEN(x,y) = 0
+      TVIS(x,y) = 0
     Next x
   Next y
   Open f$ For Input As #1

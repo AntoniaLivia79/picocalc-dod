@@ -84,7 +84,7 @@ Every hero has eight attributes rolled during character creation (1d5 + 2, range
 | **Strength** | STR | Your current hit points. Falls from exertion, bumps, traps, and monster hits. If it drops below 1 you die. Recovers slowly when idle (rate governed by VIT). Also contributes to your attack damage. |
 | **Vitality** | VIT | Maximum hit-point ceiling and recovery rate. The higher your VIT, the faster STR regenerates. Slowly depleted when you take damage. Restored by salves or the RENEWAL spell. |
 | **Agility** | AGI | Determines whether a monster's blow connects — higher AGI (combined with Luck) lets you dodge attacks. Also factors into attack accuracy. Contributes to final score. |
-| **Intelligence** | INT | Used only during character creation to determine class (Cleric requires INT > 6; Magician requires INT > 8). Has no direct mechanical effect during play. |
+| **Intelligence** | INT | Determines class at creation (Cleric requires INT > 6; Magician requires INT > 8). During play, a hero with INT above 6 can detect hidden traps — they are always visible on the map. Lower-INT heroes only see a trap after stepping on it. |
 | **Experience** | EXP | Grows as you kill monsters (+0.1), collect treasure (+0.05), and claim the Idol (+0.2). Multiplies gold in the final score formula. If the optional `NEEDEXP` gate is enabled, you must earn enough experience to descend stairs. |
 | **Luck** | LCK | Adds randomness to your attacks, helps you dodge monster blows, and determines how quickly you escape traps (must roll under Luck once STR falls below 80% of peak). |
 | **Aura** | AUR | Magical energy. Required to cast spells (must be > 0). The MEND and RENEWAL spells each cost one point of Aura. Also scales spell charge counts when a level is loaded. |
@@ -217,6 +217,8 @@ Only squares you have already lit are visible. Unexplored passages stay dark.
 Walking onto the stair tile (`>`) descends automatically.
 
 A trap (`^`) snares you in place while your exertion drains STR. Only once STR has worn below 80% of its peak can a roll of your LUCK spring you free — a trap is always a costly detour.
+
+Traps are **hidden** until you step on one, at which point it becomes permanently visible on the map. Heroes with high Intelligence (INT > 6) can sense all traps and always see them.
 
 ### Combat
 
