@@ -28,8 +28,8 @@ Dim Integer TONEMS   = 40
 Dim Integer NOISEMS  = 30
 
 
-Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
-Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
+Dim DPATH$ = "B:/DOOM"
+Dim SPATH$ = "B:/DOOM/SAVE"
 
 
 ' ------------------------------------------------- tile codes ------
@@ -42,6 +42,9 @@ Dim Integer TW = 16          ' one dungeon square in pixels
 Dim Integer MAPX = 0, MAPY = 16
 Dim Integer PANX = 242
 Dim Integer YMSG = 258, YSTA = 274, YHRO = 290, YKEY = 306
+' The bottom bar text starts at x = 4 and font 1 is 8 pixels wide, so
+' 39 characters reach 316 and the 40th would fall off a 320 wide screen
+Dim Integer BW = 39
 
 
 ' ------------------------------------------------- colours ---------
@@ -68,7 +71,8 @@ Dim Integer TCOL(17)
 ' ------------------------------------------------- state -----------
 Dim Integer R(15,15), SEEN(15,15), TVIS(15,15)
 Dim F(8)                     ' 1 STR 2 VIT 3 AGI 4 INT 5 EXP 6 LCK 7 AUR 8 MOR
-Dim Integer OBJ(24)
+Dim Integer NOBJ = 21         ' items 1-8 weapons, 9-16 armour, 17-21 magic
+Dim Integer OBJ(21)
 Dim SPL(6)                   ' spell charges
 Dim PRY(3)                   ' prayer charges (cleric only)
 Dim LCKBOOST, LCKTTL         ' Fortune prayer: bonus and remaining ticks
@@ -185,7 +189,9 @@ Do
   If IK$ = "C" And F(7) > 0 And OBJ(17) + OBJ(18) > 0 Then CastSpell
   If IK$ = "G" Then Grab
   If IK$ = "Q" Then Quaff
-  If IK$ = "P" And CLASS$ = "CLERIC" Then Pray
+  If IK$ = "P" And CLASS$ = "CLERIC" Then
+    If OBJ(19) > 0 Then Pray Else SayFor "THOU HAST NO HOLY SYMBOL"
+  EndIf
   If IK$ = "R" Then Reveal
   If IK$ = "?" Then Lore
   If IK$ = "S" Then
@@ -291,10 +297,24 @@ Sub Layout
   Text PANX, 224, "TRSR", "LT", 1, 1, CPLAB, CPBG
 
 
-  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, 40), "LT", 1, 1, CHERO, CBBG
-  Text 4, YKEY, "A-ATK G-GET C-CAST P-QUAFF R-LOOK S-SAVE", "LT", 1, 1, CBTXT, CBBG
+  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, BW), "LT", 1, 1, CHERO, CBBG
+  Text 4, YKEY, Pad$(KeyBar$(), BW), "LT", 1, 1, CBTXT, CBBG
   For i = 0 To 12 : FLDC$(i) = "" : Next i
 End Sub
+
+
+' The bottom bar starts at x = 4, so only BW characters of the 40 the
+' screen holds will fit -- the 40th ran off the right edge.
+' A cleric with a Holy Symbol prays for light instead of burning oil,
+' the same swap the status panel makes between PRY and LGT, so R gives
+' up its place to P rather than crowd the line.
+Function KeyBar$()
+  If CLASS$ = "CLERIC" And OBJ(19) > 0 Then
+    KeyBar$ = "A-ATK G-GET C-CAST Q-QUAF P-PRAY S-SAVE"
+  Else
+    KeyBar$ = "A-ATK G-GET C-CAST Q-QUAF R-LOOK S-SAVE"
+  EndIf
+End Function
 
 
 ' one 8 x 8 glyph, doubled to 16 x 16, drawn as horizontal runs
@@ -402,15 +422,15 @@ Sub ShowStatus
   att = Int(F(1) + OBJ(1)+OBJ(2)+OBJ(3)+OBJ(4)+OBJ(5)+OBJ(7)+OBJ(8))
   If FIXFLAIL = 1 Then att = att + OBJ(6)
   s$ = "ATT" + RPad$(NS$(att), 4) + "  SPL" + RPad$(NS$(Int(SPL(1)+SPL(2)+SPL(3)+SPL(4)+SPL(5)+SPL(6))), 3)
-  If CLASS$ = "CLERIC" Then
+  If CLASS$ = "CLERIC" And OBJ(19) > 0 Then
     s$ = s$ + "  PRY" + RPad$(NS$(Int(PRY(1)+PRY(2)+PRY(3))), 3)
   Else
     s$ = s$ + "  LGT" + RPad$(NS$(LT), 3)
   EndIf
-  s$ = s$ + "  POT" + RPad$(NS$(OBJ(23)+OBJ(24)), 3)
+  s$ = s$ + "  POT" + RPad$(NS$(OBJ(20)+OBJ(21)), 3)
   If s$ <> FLDC$(8) Then
     FLDC$(8) = s$
-    Text 4, YSTA, Pad$(s$, 40), "LT", 1, 1, CBTXT, CBBG
+    Text 4, YSTA, Pad$(s$, BW), "LT", 1, 1, CBTXT, CBBG
   EndIf
 
 
@@ -427,7 +447,7 @@ End Sub
 '  MESSAGES
 ' =====================================================================
 Sub Say(s$)
-  Text 4, YMSG, Pad$(s$, 39), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YMSG, Pad$(s$, BW), "LT", 1, 1, CMSGC, CBBG
 End Sub
 
 
@@ -578,7 +598,7 @@ Sub Grab
   gt = R(gx,gy)
   If gt > C1 And gt < C4 Then R(gx,gy) = C0
   If gt = C2 Then
-    OBJ(23) = OBJ(23) + 1 : OBJ(24) = OBJ(24) + 1
+    OBJ(20) = OBJ(20) + 1 : OBJ(21) = OBJ(21) + 1
     MSG$ = "A FLASK, SALVE AND POTION"
   EndIf
   If gt = C3 Then
@@ -595,11 +615,11 @@ End Sub
 
 
 Sub Quaff
-  If OBJ(24) > 0 And F(1) < S1 Then
-    F(1) = S1 : OBJ(24) = OBJ(24) - 1
+  If OBJ(21) > 0 And F(1) < S1 Then
+    F(1) = S1 : OBJ(21) = OBJ(21) - 1
     SayFor "VIGOUR RETURNS"
-  ElseIf OBJ(23) > 0 And F(2) < S2 Then
-    F(2) = S2 : OBJ(23) = OBJ(23) - 1
+  ElseIf OBJ(20) > 0 And F(2) < S2 Then
+    F(2) = S2 : OBJ(20) = OBJ(20) - 1
     SayFor "THE SALVE HEALS THEE"
   EndIf
 End Sub
@@ -608,9 +628,9 @@ End Sub
 Sub Pray
   Local Integer j, sl2
   Local k$
-  Text 4, YMSG, Pad$("1 LIGHT   2 HEAL   3 FORTUNE", 39), "LT", 1, 1, CMSGC, CBBG
-  Text 4, YSTA, Pad$("", 39), "LT", 1, 1, CMSGC, CBBG
-  Text 4, YHRO, Pad$("WHICH PRAYER?  (0 TO CANCEL)", 40), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YMSG, Pad$("1 LIGHT   2 HEAL   3 FORTUNE", BW), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YSTA, Pad$("", BW), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YHRO, Pad$("WHICH PRAYER?  (0 TO CANCEL)", BW), "LT", 1, 1, CMSGC, CBBG
 
 
   Do
@@ -626,7 +646,7 @@ Sub Pray
 
   FLDC$(8) = "" : FLDC$(0) = ""
   Say ""
-  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, 40), "LT", 1, 1, CHERO, CBBG
+  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, BW), "LT", 1, 1, CHERO, CBBG
   ShowStatus
   If sl2 <= 0 Then Exit Sub
 
@@ -689,9 +709,9 @@ End Sub
 Sub CastSpell
   Local Integer j, ex, ey
   Local k$
-  Text 4, YMSG, Pad$("1 SMITE   2 WARD    3 TRANSPORT", 39), "LT", 1, 1, CMSGC, CBBG
-  Text 4, YSTA, Pad$("4 MEND    5 CHAOS   6 RENEWAL", 39), "LT", 1, 1, CMSGC, CBBG
-  Text 4, YHRO, Pad$("USE SPELL NUMBER?  (0 TO THINK BETTER OF IT)", 40), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YMSG, Pad$("1 SMITE   2 WARD    3 TRANSPORT", BW), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YSTA, Pad$("4 MEND    5 CHAOS   6 RENEWAL", BW), "LT", 1, 1, CMSGC, CBBG
+  Text 4, YHRO, Pad$("WHICH SPELL?  (0 TO THINK AGAIN)", BW), "LT", 1, 1, CMSGC, CBBG
 
 
   Do
@@ -707,7 +727,7 @@ Sub CastSpell
 
   FLDC$(8) = "" : FLDC$(0) = ""
   Say ""
-  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, 40), "LT", 1, 1, CHERO, CBBG
+  Text 4, YHRO, Pad$(HERO$ + " THE " + CLASS$, BW), "LT", 1, 1, CHERO, CBBG
   ShowStatus
   If SL <= 0 Then Exit Sub
 
@@ -798,7 +818,7 @@ Sub Death
   NF = 5 : F(1) = 0
   Say ""
   DrawHero
-  Text 4, YHRO, Pad$("THOU HAST EXPIRED!", 40), "LT", 1, 1, RGB(255,80,80), CBBG
+  Text 4, YHRO, Pad$("THOU HAST EXPIRED!", BW), "LT", 1, 1, RGB(255,80,80), CBBG
   For j = 150 To 1 Step -8
     Snd j : Nse
     DrawHero
@@ -968,7 +988,18 @@ Sub LoadHero(fn$)
   Local Integer i
   Local ln$
   Open fn$ For Input As #1
-  Line Input #1, ln$                        ' DOOMHERO1
+  Line Input #1, ln$                        ' DOOMHERO2
+  ' DOOMHERO1 files carry 24 object slots and would load misaligned
+  If ln$ <> "DOOMHERO2" Then
+    Close #1
+    CLS CBG
+    Text 160, 120, "THIS HERO IS OF AN", "CT", 1, 1, RGB(255,120,120), CBG
+    Text 160, 140, "OLDER AGE", "CT", 1, 1, RGB(255,120,120), CBG
+    Text 160, 175, "RUN CHARGEN.BAS AGAIN", "CT", 1, 1, CBTXT, CBG
+    Text 160, 210, "PRESS ANY KEY", "CT", 1, 1, CBTXT, CBG
+    ln$ = WaitKey$()
+    End
+  EndIf
   Line Input #1, HERO$
   Line Input #1, CLASS$
   Line Input #1, ln$ : LE = Val(ln$)
@@ -978,19 +1009,48 @@ Sub LoadHero(fn$)
   Line Input #1, ln$ : S1 = Val(ln$)
   Line Input #1, ln$ : S2 = Val(ln$)
   Line Input #1, ln$ : S3 = Val(ln$)
-  For i = 1 To 24 : Line Input #1, ln$ : OBJ(i) = Val(ln$) : Next i
+  For i = 1 To NOBJ : Line Input #1, ln$ : OBJ(i) = Val(ln$) : Next i
   Line Input #1, ln$ : GC = Val(ln$)
   Line Input #1, ln$ : TR = Val(ln$)
   For i = 1 To 6 : Line Input #1, ln$ : SPL(i) = Val(ln$) : Next i
   Line Input #1, ln$ : LT = Val(ln$)
-  ' prayer charges (added for cleric mechanic)
+  ' Everything past this point was added after the first release, so a
+  ' HERO.DAT from CHARGEN.BAS simply ends here.  Take the defaults
+  ' first, then overwrite only what the file actually carries.
+  ' These must be multi-line If blocks: in a one line If ... Then ... Else
+  ' the statement after a colon runs whichever way the test fell, which
+  ' left MSPEED holding Val$ of the previous line -- a speed of 0.
   For i = 1 To 3
-    If Eof(#1) Then PRY(i) = 0 Else Line Input #1, ln$ : PRY(i) = Val(ln$)
+    PRY(i) = 0                          ' prayer charges, cleric mechanic
   Next i
-  If Eof(#1) Then LCKBOOST = 0 Else Line Input #1, ln$ : LCKBOOST = Val(ln$)
-  If Eof(#1) Then LCKTTL = 0 Else Line Input #1, ln$ : LCKTTL = Val(ln$)
-  If Eof(#1) Then NEEDEXP = 0 Else Line Input #1, ln$ : NEEDEXP = Val(ln$)
-  If Eof(#1) Then MSPEED = 2 Else Line Input #1, ln$ : MSPEED = Val(ln$)
+  LCKBOOST = 0 : LCKTTL = 0             ' Fortune prayer, not yet cast
+  NEEDEXP  = 0                          ' experience gate off
+  MSPEED   = 2                          ' normal monster speed
+
+
+  For i = 1 To 3
+    If Not Eof(#1) Then
+      Line Input #1, ln$
+      PRY(i) = Val(ln$)
+    EndIf
+  Next i
+  If Not Eof(#1) Then
+    Line Input #1, ln$
+    LCKBOOST = Val(ln$)
+  EndIf
+  If Not Eof(#1) Then
+    Line Input #1, ln$
+    LCKTTL = Val(ln$)
+  EndIf
+  If Not Eof(#1) Then
+    Line Input #1, ln$
+    NEEDEXP = Val(ln$)
+  EndIf
+  If Not Eof(#1) Then
+    Line Input #1, ln$
+    MSPEED = Val(ln$)
+  EndIf
+  If MSPEED < 1 Or MSPEED > 3 Then MSPEED = 2
   Close #1
 End Sub
 
@@ -998,7 +1058,7 @@ End Sub
 Sub SaveHero(fn$)
   Local Integer i
   Open fn$ For Output As #1
-  Print #1, "DOOMHERO1"
+  Print #1, "DOOMHERO2"
   Print #1, HERO$
   Print #1, CLASS$
   Print #1, NS$(LE)
@@ -1008,7 +1068,7 @@ Sub SaveHero(fn$)
   Print #1, Str$(S1)
   Print #1, Str$(S2)
   Print #1, Str$(S3)
-  For i = 1 To 24 : Print #1, NS$(OBJ(i)) : Next i
+  For i = 1 To NOBJ : Print #1, NS$(OBJ(i)) : Next i
   Print #1, NS$(GC)
   Print #1, NS$(TR)
   For i = 1 To 6 : Print #1, Str$(SPL(i)) : Next i
@@ -1046,9 +1106,9 @@ Sub Splash
   Text 160, 120, "MOVE   M  or UP ARROW", "CT", 1, 1, CBTXT, CBG
   Text 160, 136, "TURN   B / N or LEFT/RIGHT", "CT", 1, 1, CBTXT, CBG
   Text 160, 152, "ATTACK A     GET    G", "CT", 1, 1, CBTXT, CBG
-  Text 160, 168, "CAST   C     QUAFF  P", "CT", 1, 1, CBTXT, CBG
-  Text 160, 184, "LOOK   R     SAVE   S", "CT", 1, 1, CBTXT, CBG
-  Text 160, 200, "HELP   ?", "CT", 1, 1, CBTXT, CBG
+  Text 160, 168, "CAST   C     QUAFF  Q", "CT", 1, 1, CBTXT, CBG
+  Text 160, 184, "PRAY   P     LOOK   R", "CT", 1, 1, CBTXT, CBG
+  Text 160, 200, "SAVE   S     HELP   ?", "CT", 1, 1, CBTXT, CBG
   Text 160, 240, "MONSTERS MOVE WHETHER OR NOT", "CT", 1, 1, RGB(255,140,140), CBG
   Text 160, 256, "THOU DOST.  TARRY NOT.", "CT", 1, 1, RGB(255,140,140), CBG
   Text 160, 292, "PRESS ANY KEY", "CT", 1, 1, CTTXT, CBG
@@ -1056,23 +1116,57 @@ Sub Splash
 End Sub
 
 
+' Only the spells and prayers this hero can actually reach are listed,
+' which also keeps the page within its eight lines: the Scrolls are for
+' Magicians and the Holy Symbol for Clerics, so nobody can hold both.
 Sub Lore
   Local k$
+  Local Integer y
   CLS CBG
-  Text 160, 20, "THE LORE", "CT", 1, 2, CHERO, CBG
-  Text 160, 60,  "M MOVE FORWARD    B/N TURN", "CT", 1, 1, CBTXT, CBG
-  Text 160, 76,  "A ATTACK THE BEAST BEFORE THEE", "CT", 1, 1, CBTXT, CBG
-  Text 160, 92,  "G GET WHAT LIES AHEAD", "CT", 1, 1, CBTXT, CBG
-  Text 160, 108, "Q QUAFF A POTION OR SALVE", "CT", 1, 1, CBTXT, CBG
-  Text 160, 124, "P PRAY (CLERIC ONLY)", "CT", 1, 1, CBTXT, CBG
-  Text 160, 140, "R LOOK ABOUT, SPENDS LAMP OIL", "CT", 1, 1, CBTXT, CBG
-  Text 160, 156, "C CAST A SPELL    S SAVE AND STOP", "CT", 1, 1, CBTXT, CBG
-  Text 160, 176, "1 SMITE      SLAY THE BEAST", "CT", 1, 1, CPLAB, CBG
-  Text 160, 192, "2 WARD       A CIRCLE OF SAFETY", "CT", 1, 1, CPLAB, CBG
-  Text 160, 208, "3 TRANSPORT  GO ELSEWHERE", "CT", 1, 1, CPLAB, CBG
-  Text 160, 224, "4 MEND       A LITTLE HEALING", "CT", 1, 1, CPLAB, CBG
-  Text 160, 240, "5 CHAOS      REMAKE THE WAY AHEAD", "CT", 1, 1, CPLAB, CBG
-  Text 160, 256, "6 RENEWAL    WHOLE AGAIN", "CT", 1, 1, CPLAB, CBG
+  Text 160, 16, "THE LORE", "CT", 1, 2, CHERO, CBG
+  Text 160, 56,  "M MOVE FORWARD    B/N TURN", "CT", 1, 1, CBTXT, CBG
+  Text 160, 72,  "A ATTACK THE BEAST BEFORE THEE", "CT", 1, 1, CBTXT, CBG
+  Text 160, 88,  "G GET WHAT LIES AHEAD", "CT", 1, 1, CBTXT, CBG
+  Text 160, 104, "Q QUAFF A POTION OR SALVE", "CT", 1, 1, CBTXT, CBG
+  Text 160, 120, "R LOOK ABOUT, SPENDS LAMP OIL", "CT", 1, 1, CBTXT, CBG
+  Text 160, 136, "C CAST A SPELL   P PRAY", "CT", 1, 1, CBTXT, CBG
+  Text 160, 152, "S SAVE AND STOP  ? THIS LORE", "CT", 1, 1, CBTXT, CBG
+
+
+  y = 172
+  If OBJ(17) > 0 Or OBJ(18) > 0 Then
+    Text 160, y, "THY SPELLS   (PRESS C)", "CT", 1, 1, CHERO, CBG
+    y = y + 14
+    If OBJ(17) > 0 Then
+      Text 160, y, "1 SMITE      SLAY THE BEAST", "CT", 1, 1, CPLAB, CBG
+      y = y + 14
+      Text 160, y, "2 WARD       A CIRCLE OF SAFETY", "CT", 1, 1, CPLAB, CBG
+      y = y + 14
+      Text 160, y, "3 TRANSPORT  GO ELSEWHERE", "CT", 1, 1, CPLAB, CBG
+      y = y + 14
+    EndIf
+    If OBJ(18) > 0 Then
+      Text 160, y, "4 MEND       A LITTLE HEALING", "CT", 1, 1, CPLAB, CBG
+      y = y + 14
+      Text 160, y, "5 CHAOS      REMAKE THE WAY AHEAD", "CT", 1, 1, CPLAB, CBG
+      y = y + 14
+      Text 160, y, "6 RENEWAL    WHOLE AGAIN", "CT", 1, 1, CPLAB, CBG
+      y = y + 14
+    EndIf
+  EndIf
+
+
+  If CLASS$ = "CLERIC" And OBJ(19) > 0 Then
+    Text 160, y, "THY PRAYERS  (PRESS P)", "CT", 1, 1, CHERO, CBG
+    y = y + 14
+    Text 160, y, "1 LIGHT      LOOK ABOUT, NO OIL", "CT", 1, 1, CPLAB, CBG
+    y = y + 14
+    Text 160, y, "2 HEAL       A LITTLE HEALING", "CT", 1, 1, CPLAB, CBG
+    y = y + 14
+    Text 160, y, "3 FORTUNE    LUCK FOR A WHILE", "CT", 1, 1, CPLAB, CBG
+  EndIf
+
+
   Text 160, 292, "PRESS ANY KEY", "CT", 1, 1, CTTXT, CBG
   k$ = WaitKey$()
   Layout
@@ -1154,9 +1248,14 @@ Sub LoadGame
     Next i
     LT = 0
     If OBJ(16) = 1 Then LT = 20
-    ' prayer charges for clerics, same formula as spells
+    ' prayer charges for clerics bearing a Holy Symbol, as spells need
+    ' a book, and the same formula
     For i = 1 To 3
-      If CLASS$ = "CLERIC" Then PRY(i) = Int(F(7)) + 2 Else PRY(i) = 0
+      If CLASS$ = "CLERIC" And OBJ(19) > 0 Then
+        PRY(i) = Int(F(7)) + 2
+      Else
+        PRY(i) = 0
+      EndIf
     Next i
     LCKBOOST = 0 : LCKTTL = 0
     LE = 1

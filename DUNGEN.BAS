@@ -16,8 +16,8 @@ Option Explicit
 Option Default Float
 
 
-Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
-Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
+Dim DPATH$ = "B:/DOOM"
+Dim SPATH$ = "B:/DOOM/SAVE"
 
 
 ' ------------------------------------------------- tile codes -------

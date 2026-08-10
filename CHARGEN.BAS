@@ -15,8 +15,8 @@ Option Default Float
 
 
 ' ------------------------------------------------- paths ------------
-Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
-Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
+Dim DPATH$ = "B:/DOOM"
+Dim SPATH$ = "B:/DOOM/SAVE"
 
 
 ' ------------------------------------------------- geometry ---------
@@ -43,19 +43,26 @@ CCLASS  = RGB(120,230,160)
 
 
 ' ------------------------------------------------- data -------------
-Dim Integer NOBJ = 24         ' D*3 in the original listing
+Dim Integer NOBJ = 21         ' D*3 in the original listing, less the
+                              ' three flavour trinkets this port drops
 
 
 Dim FV(4,9)                   ' 1,* = attributes   2..4,* = shop prices
 Dim FN$(4,9)                  ' matching names, ,9 = department title
 Dim CNAME$(5)                 ' character classes
-Dim Integer OBJ(24)           ' how many of each object the hero owns
-Dim PERM$(24)                 ' 5 char mask: may class 1..5 buy it?
-Dim Integer QTY(24)           ' how many units one purchase yields
+Dim Integer OBJ(21)           ' how many of each object the hero owns
+Dim PERM$(21)                 ' 5 char mask: may class 1..5 buy it?
+Dim Integer QTY(21)           ' how many units one purchase yields
+
+
+' rows on each page: 8 attributes, 8 weapons, 8 armour, 5 emporium
+Dim Integer SHOPN(4)
+SHOPN(1) = 8 : SHOPN(2) = 8 : SHOPN(3) = 8 : SHOPN(4) = 5
 
 
 Dim Integer I, J, K, N, C, P, MP, GC, PURSE, BR, OFR, PR, YES
 Dim Integer FINISHED
+Dim Integer NAMING            ' 1 while the name prompt is on screen
 Dim MSG$, HEAD$, HERO$, KEY$
 
 
@@ -66,21 +73,21 @@ Randomize Timer
 ' purchase permission masks, one per object, one digit per class
 Data "00001","00011","10011","10011","10011","00011","11111","10011"
 Data "00011","00011","10011","11111","00011","11011","11011","11111"
-Data "11100","00100","11100","10100","11100","11100","11111","11111"
+Data "11100","00100","01000","11111","11111"
 For I = 1 To NOBJ : Read PERM$(I) : Next I
 
 
 ' shop prices
 Data 20,16,12,15,8,10,8,6
 Data 18,15,9,9,14,8,6,6
-Data 20,15,14,12,10,8,6,6
-For J = 2 To 4 : For I = 1 To 8 : Read FV(J,I) : Next I : Next J
+Data 20,15,15,6,6
+For J = 2 To 4 : For I = 1 To SHOPN(J) : Read FV(J,I) : Next I : Next J
 
 
 ' units supplied per purchase
 Data 5,4,3,3,2,2,1,1
 Data 5,4,3,1,2,1,3,1
-Data 4,3,2,2,3,1,1,1
+Data 4,3,2,1,1
 For I = 1 To NOBJ : Read QTY(I) : Next I
 
 
@@ -91,9 +98,12 @@ Data "2 HAND SWORD","BROADSWORD","SHORT SWORD"
 Data "AXE","MACE","FLAIL","DAGGER","GAUNTLET","ARMOURY"
 Data "HEAVY ARMOUR","CHAIN ARMOUR","LEATHER ARMOUR","HEAVY ROBE"
 Data "GOLD HELMET","HEADPIECE","SHIELD","TORCH","ACCOUTREMENTS"
-Data "NECRONOMICON","SCROLLS","RING","MYSTIC AMULET","SASH","CLOAK"
+Data "NECRONOMICON","SCROLLS","HOLY SYMBOL"
 Data "HEALING SALVE","POTIONS","EMPORIUM"
-For J = 1 To 4 : For I = 1 To 9 : Read FN$(J,I) : Next I : Next J
+For J = 1 To 4
+  For I = 1 To SHOPN(J) : Read FN$(J,I) : Next I
+  Read FN$(J,9)                       ' department title
+Next J
 
 
 Data "WANDERER","CLERIC","MAGICIAN","WARRIOR","BARBARIAN"
@@ -153,7 +163,7 @@ For J = 2 To 4
     KEY$ = WaitKey$()
     N   = 8 * (J - 2) + K
     BR  = 0 : OFR = 0
-    If KEY$ = "J" And K < 8 Then
+    If KEY$ = "J" And K < SHOPN(J) Then
       K = K + 1 : DrawList : DrawCursor
     ElseIf KEY$ = "K" And K > 1 Then
       K = K - 1 : DrawList : DrawCursor
@@ -177,9 +187,11 @@ Next J
 MSG$ = "NAME THY CHARACTER"
 J = 1                    ' back off the shop loop's exit value of 5,
                          ' which would index FN$(5,9) out of bounds
+NAMING = 1
 DrawPage : ShowMsg
 HERO$ = AskText$("NAME:", 10)
 If HERO$ = "" Then HERO$ = "NAMELESS"
+NAMING = 0
 
 
 MSG$ = "ONE MOMENT PLEASE" : ShowMsg
@@ -222,7 +234,7 @@ End Sub
 
 Sub DrawList
   Local Integer i, y, c
-  For i = 1 To 8
+  For i = 1 To SHOPN(J)
     y = YLST + (i - 1) * ROWH
     c = CLIST : If i = K Then c = CSEL
     If i = 5 And J = 1 Then c = RGB(120,120,130)
@@ -234,7 +246,7 @@ End Sub
 
 Sub DrawCursor
   Local Integer i, y
-  For i = 1 To 8
+  For i = 1 To SHOPN(J)
     y = YLST + (i - 1) * ROWH
     If i = K Then
       Text 4, y, ">", "LT", 1, SC, CSEL, CLISTB
@@ -260,7 +272,9 @@ End Sub
 
 
 Function KeyHelp$()
-  If J = 1 Then
+  If NAMING = 1 Then
+    KeyHelp$ = "TYPE A NAME   ENTER WHEN DONE"
+  ElseIf J = 1 Then
     KeyHelp$ = "K/J MOVE   H/L SPEND   SPACE WHEN DONE"
   Else
     KeyHelp$ = "K/J MOVE  B BUY  O OFFER  SPACE LEAVE"
@@ -290,7 +304,7 @@ End Sub
 
 
 Sub Bargain
-  If OBJ(N) > 0 And N < 23 Then MSG$ = "YOU HAVE IT SIRE" : Exit Sub
+  If OBJ(N) > 0 And N < 20 Then MSG$ = "YOU HAVE IT SIRE" : Exit Sub
   PR = FV(J,K) - BR
   If PURSE < PR Then MSG$ = "YOU CANNOT AFFORD" : Exit Sub
   If OFR >= PR And YES = 1 Then
@@ -312,7 +326,7 @@ End Sub
 Sub SaveHero(f$)
   Local Integer i
   Open f$ For Output As #1
-  Print #1, "DOOMHERO1"
+  Print #1, "DOOMHERO2"
   Print #1, HERO$
   Print #1, CNAME$(C)
   Print #1, "0"                       ' current dungeon level, 0 = new
