@@ -30,11 +30,11 @@ SETUP
 
 The game consists of three BASIC
 programs. Copy all three to the SD card
-folder B:/picomite/games/rpg/DOOM :
+folder B:/DOOM :
 
-  DOOM/DUNGEN.BAS
-  DOOM/CHARGEN.BAS
-  DOOM/DOOM.BAS
+  B:/DOOM/DUNGEN.BAS
+  B:/DOOM/CHARGEN.BAS
+  B:/DOOM/DOOM.BAS
 
 On PicoMite, A: is internal flash and B:
 is the SD card. The data paths are set
@@ -43,10 +43,8 @@ program and can be changed there (the
 programs create missing folders
 themselves):
 
-  Dim DPATH$ =
-    "B:/picomite/games/rpg/DOOM"
-  Dim SPATH$ =
-    "B:/picomite/games/rpg/DOOM/SAVE"
+  Dim DPATH$ = "B:/DOOM"
+  Dim SPATH$ = "B:/DOOM/SAVE"
 
 FIRST-TIME SETUP
 ----------------------------------------
@@ -269,7 +267,7 @@ EQUIPMENT SHOPS
 ----------------------------------------
 After spending spare attribute points
 you visit three shops with a purse of
-120-180 gold coins. Items below index 23
+120-180 gold coins. Items below index 20
 can only be bought once; salves and
 potions may be bought repeatedly. You
 can BUY at list price or OFFER a lower
@@ -378,32 +376,29 @@ EMPORIUM (MAGIC & CONSUMABLES)
      RENEWAL). Each spell gets AURA
      charges.
      Buyers: Mag
-19 RING
-     Cost 14  Qty 2
-     Cosmetic item.
-     Buyers: Wan Cle Mag
-20 MYSTIC AMULET
-     Cost 12  Qty 2
-     Cosmetic item.
-     Buyers: Wan Mag
-21 SASH
-     Cost 10  Qty 3
-     Cosmetic item.
-     Buyers: Wan Cle Mag
-22 CLOAK
-     Cost 8   Qty 1
-     Cosmetic item.
-     Buyers: Wan Cle Mag
-23 HEALING SALVE
+19 HOLY SYMBOL
+     Cost 15  Qty 2
+     Required to pray. Without one a
+     Cleric has no prayers at all.
+     Buyers: Cle
+20 HEALING SALVE
      Cost 6   Qty 1
      Restores VIT to peak when quaffed
      (Q). Can be bought many times.
      Buyers: all classes
-24 POTIONS
+21 POTIONS
      Cost 6   Qty 1
      Restores STR to peak when quaffed
      (Q). Can be bought many times.
      Buyers: all classes
+
+The Ring, Sash and Cloak of the original
+listing have been dropped - they had no
+mechanical effect. Items are numbered
+1-21 as a result, and HERO.DAT now
+carries the tag DOOMHERO2. Heroes rolled
+before this change must be re-rolled
+with CHARGEN.BAS.
 
 QTY is the number of units one purchase
 provides. For weapons and armour this
@@ -487,6 +482,17 @@ The bottom bar shows:
   SPL   Spell charges remaining
   LGT   Lamp oil charges
   POT   Potions and salves combined
+
+Below that runs a one-line key reminder:
+
+  A-ATK G-GET C-CAST Q-QUAF R-LOOK
+  S-SAVE
+
+For a Cleric carrying a Holy Symbol,
+P-PRAY takes the place of R-LOOK - the
+LIGHT prayer does the same job without
+spending oil - though R still works if
+you bought a torch anyway.
 
 Your hero (@) changes sprite to show
 which way you face.
@@ -759,7 +765,15 @@ casting.
 PRAYERS (CLERIC ONLY)
 ----------------------------------------
 Press P to open the prayer menu. Only
-heroes with the CLERIC class can pray.
+heroes with the CLERIC class can pray,
+and only while carrying a HOLY SYMBOL -
+the symbol is to prayers what the
+Necronomicon and Scrolls are to spells.
+A Cleric who leaves the Emporium without
+one has no prayers for the whole quest,
+so buy it first. Pressing P empty-handed
+answers "THOU HAST NO HOLY SYMBOL".
+
 Prayers have a limited number of charges
 (based on AURA + 2 at character
 creation), similar to spells.
@@ -779,12 +793,21 @@ Press 0 to cancel the prayer menu
 without praying.
 
 The status bar shows PRY (total prayer
-charges remaining) in place of LGT for
-Clerics.
+charges remaining) in place of LGT for a
+Cleric carrying a Holy Symbol. Without
+the symbol the Cleric keeps the ordinary
+LGT lamp oil readout.
 
 KEY REFERENCE
 ----------------------------------------
 Press ? in-game to show the lore screen.
+It lists the movement and command keys,
+then only those spells and prayers your
+hero can actually reach - the
+Necronomicon's three, the Scrolls'
+three, the Cleric's three. A hero
+carrying no book and no symbol sees the
+command keys alone.
 
   UP    / M  Move forward
   LEFT  / B  Turn left
@@ -793,7 +816,8 @@ Press ? in-game to show the lore screen.
   A          Attack
   C          Cast spell
   Q          Quaff potion or salve
-  P          Pray (Cleric only)
+  P          Pray (Cleric with the
+             Holy Symbol)
   R          Reveal area (lamp oil)
   S          Save and stop
   ?          Show lore screen
@@ -844,10 +868,15 @@ TIPS AND STRATEGY
 - TRANSPORT IS RISKY. You may teleport
   into a wall (stuck bumping) or onto a
   trap. Use it only when cornered.
+- A CLERIC'S FIRST PURCHASE IS THE HOLY
+  SYMBOL. 15 gold buys the entire prayer
+  list; skip it and the P key does
+  nothing all quest.
 - THE CLERIC'S LIGHT PRAYER REPLACES THE
-  TORCH. Clerics don't need lamp oil -
-  each LIGHT prayer reveals the same 7x7
-  area for free.
+  TORCH. A Cleric with a Holy Symbol
+  doesn't need lamp oil - each LIGHT
+  prayer reveals the same 7x7 area for
+  free.
 - REST TO HEAL. Standing still costs
   nothing and STR regenerates at
   VIT/1100 per tick. Between fights,

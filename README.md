@@ -9,23 +9,23 @@ over the village. Are you ready to try?
 
 Ported from BBC BASIC to PicoMite BASIC for the PicoCalc (320×320).
 
-Originally from Usborne's *Write Your Own Fantasy Games For Your Microcomputer*.
+Originally from Usborne's *Write Your Own Fantasy Games For Your Microcomputer* by Les Howarth and Cheryl Evans.
 
 ## Setup
 
-The game consists of three BASIC programs. Copy all three to the SD card folder `B:/picomite/games/rpg/DOOM`:
+The game consists of three BASIC programs. Copy all three to the SD card folder `B:/DOOM`:
 
 ```
-B:/picomite/games/rpg/DOOM/DUNGEN.BAS
-B:/picomite/games/rpg/DOOM/CHARGEN.BAS
-B:/picomite/games/rpg/DOOM/DOOM.BAS
+B:/DOOM/DUNGEN.BAS
+B:/DOOM/CHARGEN.BAS
+B:/DOOM/DOOM.BAS
 ```
 
 On PicoMite, `A:` is internal flash and `B:` is the SD card. The data paths are set in two variables at the top of each program and can be changed there (the programs create missing folders themselves):
 
 ```basic
-Dim DPATH$ = "B:/picomite/games/rpg/DOOM"
-Dim SPATH$ = "B:/picomite/games/rpg/DOOM/SAVE"
+Dim DPATH$ = "B:/DOOM"
+Dim SPATH$ = "B:/DOOM/SAVE"
 ```
 
 ### First-time setup
@@ -135,7 +135,7 @@ Because later rules override earlier ones, you must also ensure you **don't** ac
 
 ### Equipment Shops
 
-After spending spare attribute points you visit three shops with a purse of 120–180 gold coins. Items below index 23 can only be bought once; salves and potions may be purchased repeatedly. You can **Buy** at list price or **Offer** a lower amount (up to 3 gold discount chosen randomly).
+After spending spare attribute points you visit three shops with a purse of 120–180 gold coins. Items below index 20 can only be bought once; salves and potions may be purchased repeatedly. You can **Buy** at list price or **Offer** a lower amount (up to 3 gold discount chosen randomly).
 
 Class restrictions use a five-class mask (Wanderer / Cleric / Magician / Warrior / Barbarian). A "✗" means the class **cannot** buy that item.
 
@@ -180,12 +180,11 @@ Armour items reduce incoming monster damage. The formula divides raw damage by (
 |---|------|------|-----|--------|----------|--------|----------|---------|-----------|
 | 17 | Necronomicon | 20 | 4 | Grants spells 1–3 (SMITE, WARD, TRANSPORT). Each spell receives AURA charges. | ✓ | ✓ | ✓ | ✗ | ✗ |
 | 18 | Scrolls | 15 | 3 | Grants spells 4–6 (MEND, CHAOS, RENEWAL). Each spell receives AURA charges. | ✗ | ✗ | ✓ | ✗ | ✗ |
-| 19 | Ring | 14 | 2 | No mechanical effect (flavour item). | ✓ | ✓ | ✓ | ✗ | ✗ |
-| 20 | Mystic Amulet | 12 | 2 | No mechanical effect (flavour item). | ✓ | ✗ | ✓ | ✗ | ✗ |
-| 21 | Sash | 10 | 3 | No mechanical effect (flavour item). | ✓ | ✓ | ✓ | ✗ | ✗ |
-| 22 | Cloak | 8 | 1 | No mechanical effect (flavour item). | ✓ | ✓ | ✓ | ✗ | ✗ |
-| 23 | Healing Salve | 6 | 1 | Restores VIT to peak when quaffed (`Q`). Can be bought multiple times. | ✓ | ✓ | ✓ | ✓ | ✓ |
-| 24 | Potions | 6 | 1 | Restores STR to peak when quaffed (`Q`). Can be bought multiple times. | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 19 | Holy Symbol | 15 | 2 | Required to pray. Without one a Cleric has no prayers at all. | ✗ | ✓ | ✗ | ✗ | ✗ |
+| 20 | Healing Salve | 6 | 1 | Restores VIT to peak when quaffed (`Q`). Can be bought multiple times. | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 21 | Potions | 6 | 1 | Restores STR to peak when quaffed (`Q`). Can be bought multiple times. | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+> The Ring, Sash and Cloak from the original listing have been dropped — they had no mechanical effect, and their gold is better spent elsewhere. Items are numbered 1–21 as a result, and `HERO.DAT` now carries the tag `DOOMHERO2`; heroes rolled before this change must be re-rolled with CHARGEN.BAS.
 
 > **Qty** is the number of units one purchase provides. For weapons and armour this value doubles as the stat bonus (a 2 Hand Sword gives 5 quantity points which all add to ATT). For consumables it is the number of uses gained.
 
@@ -242,6 +241,8 @@ The bottom bar shows:
 | SPL | Spell charges remaining |
 | LGT | Lamp oil charges |
 | POT | Potions and salves combined |
+
+Below that runs a one-line key reminder: `A-ATK G-GET C-CAST Q-QUAF R-LOOK S-SAVE`. For a Cleric carrying a Holy Symbol, `P-PRAY` takes the place of `R-LOOK` — the LIGHT prayer does the same job without spending oil — though `R` still works if you bought a torch anyway.
 
 Your hero (`@`) changes sprite to show which way you face.
 
@@ -386,7 +387,9 @@ Press `0` to cancel the spell menu without casting.
 
 ### Prayers (Cleric only)
 
-Press `P` to open the prayer menu. Only heroes with the **Cleric** class can pray. Prayers have a limited number of charges (based on AURA + 2 at character creation), similar to spells.
+Press `P` to open the prayer menu. Only heroes with the **Cleric** class can pray, and only while carrying a **Holy Symbol** — the symbol is to prayers what the Necronomicon and Scrolls are to spells. A Cleric who leaves the Emporium without one has no prayers for the whole quest, so buy it first. Pressing `P` empty-handed answers "THOU HAST NO HOLY SYMBOL".
+
+Prayers have a limited number of charges (based on AURA + 2 at character creation), similar to spells.
 
 | # | Name | Effect |
 |---|------|--------|
@@ -396,11 +399,11 @@ Press `P` to open the prayer menu. Only heroes with the **Cleric** class can pra
 
 Press `0` to cancel the prayer menu without praying.
 
-The status bar shows `PRY` (total prayer charges remaining) in place of `LGT` for Clerics.
+The status bar shows `PRY` (total prayer charges remaining) in place of `LGT` for a Cleric carrying a Holy Symbol. Without the symbol the Cleric keeps the ordinary `LGT` lamp oil readout.
 
 ### Key reference
 
-Press `?` in-game to show the lore screen.
+Press `?` in-game to show the lore screen. It lists the movement and command keys, then only those spells and prayers your hero can actually reach — the Necronomicon's three, the Scrolls' three, the Cleric's three. A hero carrying no book and no symbol sees the command keys alone.
 
 | Key | Action |
 |-----|--------|
@@ -411,7 +414,7 @@ Press `?` in-game to show the lore screen.
 | `A` | Attack |
 | `C` | Cast spell |
 | `Q` | Quaff potion or salve |
-| `P` | Pray (Cleric only) |
+| `P` | Pray (Cleric with Holy Symbol) |
 | `R` | Reveal area (costs lamp oil) |
 | `S` | Save and stop |
 | `?` | Show lore screen |
@@ -437,5 +440,6 @@ If STR reaches zero, your hero expires. The level they fell on is shown on the d
 - **INT > 6 is always useful.** Seeing traps before you step on them saves potions and keeps you moving.
 - **Only one monster hunts at a time.** You can avoid waking a second monster by not revealing the square it stands on until the first is dead.
 - **Transport is risky.** You may teleport into a wall (stuck bumping) or onto a trap. Use it only when cornered.
-- **The Cleric's LIGHT prayer replaces the torch.** Clerics don't need lamp oil — each LIGHT prayer reveals the same 7×7 area for free.
+- **A Cleric's first purchase is the Holy Symbol.** 15 gold buys the entire prayer list; skip it and the `P` key does nothing all quest.
+- **The Cleric's LIGHT prayer replaces the torch.** A Cleric with a Holy Symbol doesn't need lamp oil — each LIGHT prayer reveals the same 7×7 area for free.
 - **Rest to heal.** Standing still costs nothing and STR regenerates at VIT/1100 per tick. Between fights, pause to recover.
